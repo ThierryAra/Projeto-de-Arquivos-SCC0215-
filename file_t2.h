@@ -1,0 +1,1 @@
+typedef struct register_t2 Register_t2;
