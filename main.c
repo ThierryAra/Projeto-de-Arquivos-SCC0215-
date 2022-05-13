@@ -108,7 +108,7 @@ int main(){
             read_word(name_bin, stdin);
             int rrn; scanf("%d", &rrn);
 
-            Register_t1* r1 = create_register_t1();
+            Record_t1* r1 = create_record_t1();
             FILE* file_bin = fopen(name_bin, "rb");
             
             res = search_rrn(type_file, file_bin, rrn, r1);
@@ -119,7 +119,7 @@ int main(){
             else
                 print_r1(r1);
 
-            free_reg_t1(r1);
+            free_rec_t1(r1);
             if(file_bin != NULL) fclose(file_bin);  
             break;
     }

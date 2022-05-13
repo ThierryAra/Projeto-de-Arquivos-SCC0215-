@@ -4,7 +4,7 @@
 
 // Registro criado para um arquivo contendo registros
 // de tamanho variavel
-struct register_t2{
+struct record_t2{
     char removido;
     int tam_registro, prox;
     int id, ano, qtt;
@@ -20,8 +20,8 @@ struct register_t2{
     char* modelo;
 };
 
-Register_t2* create_register_t2(){
-    Register_t2* r2 = malloc(sizeof(Register_t2));
+Record_t2* create_record_t2(){
+    Record_t2* r2 = malloc(sizeof(Record_t2));
 
     r2->removido   = 0;
     r2->marca      = malloc(sizeof(char)*30);
@@ -34,7 +34,7 @@ Register_t2* create_register_t2(){
     return r2;
 }
 
-void free_reg_t2(Register_t2* r2){
+void free_reg_t2(Record_t2* r2){
     free(r2->cidade);
     free(r2->marca);
     free(r2->modelo);

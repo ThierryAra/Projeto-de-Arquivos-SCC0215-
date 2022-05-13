@@ -1,1 +1,1 @@
-typedef struct register_t2 Register_t2;
+typedef struct record_t2 Record_t2;
