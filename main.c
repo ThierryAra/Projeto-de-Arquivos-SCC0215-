@@ -21,6 +21,7 @@ int main(){
     FILE* file_bin;
 
     scanf("%d", &option);
+
     switch (option){
         case 1:      // CREATE TABLE
             read_word(type_file, stdin);
@@ -38,8 +39,8 @@ int main(){
                 else 
                     binarioNaTela(name_bin);
             }else if(strcmp(type_file, "tipo2") == 0){
-                //create_table_t2(file_csv, file_bin);
-                //binarioNaTela(name_bin);
+                create_table_t2(file_csv, file_bin);
+                binarioNaTela(name_bin);
             }else    
                 printf("Falha no processamento do arquivo.");
             

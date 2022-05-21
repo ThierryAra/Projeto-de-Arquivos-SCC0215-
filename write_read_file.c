@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include"file_t1.h"
+#include "file_t1.h"
+#include "file_t2.h"
 
 int remove_header(FILE* file_csv){
     char header[100];
@@ -54,6 +55,7 @@ int read_field_char(char* string, FILE* file){
     }while(c != ',' && c != '\n' && c != '\r');
 
     string[i]  = '\0';
+
     return 1;
 }
 

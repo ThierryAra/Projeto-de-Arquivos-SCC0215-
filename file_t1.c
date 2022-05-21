@@ -1,7 +1,8 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include"file_t1.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "file_t1.h"
+#include "write_read_file.h"
 
 #define REG_SIZE 97          //record size
 #define BINf_HEADER_SIZE 182 //binary file_bin header size
@@ -58,7 +59,7 @@ int create_table_t1(FILE* file_csv, FILE* file_bin){
         return -2;
     
     Record_t1* r1 = create_record_t1();
-    if(write_header_t1(file_bin) == -1)
+    if(write_header_t1(file_bin) == -2)
         return -1;
 
     while(read_item_t1(file_csv, r1) > 0){
@@ -242,11 +243,7 @@ int read_item_t1(FILE* file_csv, Record_t1* r1){
     //ano
     if(read_field_int(file_csv, &r1->ano) == -1)
         r1->ano = -1;
-    else{
-        //remove ".0" do ano
-        fscanf(file_csv, "%c", &c); 
-        fscanf(file_csv, "%c", &c);
-    }
+
     //cidade
     if(read_field_char(r1->cidade, file_csv) < 1){
         r1->cidade[0]  = '\0';
