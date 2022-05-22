@@ -18,7 +18,7 @@ int main(){
     char name_csv[20];
     char type_file[6];
     char name_bin[20];
-    FILE* file_bin;
+    FILE* bin_file;
 
     scanf("%d", &option);
 
@@ -28,50 +28,53 @@ int main(){
             read_word(name_csv, stdin); 
             read_word(name_bin, stdin);
 
-            FILE* file_csv = fopen(name_csv, "r");
-            remove_header(file_csv);
-            file_bin = fopen(name_bin, "wb+");
+            FILE* csv_file = fopen(name_csv, "r");
+            remove_header(csv_file);
+            bin_file = fopen(name_bin, "wb+");
 
             if(strcmp(type_file, "tipo1") == 0){
-                res = create_table_t1(file_csv, file_bin);
+                res = create_table_t1(csv_file, bin_file);
                 if(res < 1)
                     printf("Falha no processamento do arquivo.");
                 else 
                     binarioNaTela(name_bin);
             }else if(strcmp(type_file, "tipo2") == 0){
-                create_table_t2(file_csv, file_bin);
-                binarioNaTela(name_bin);
+                res = create_table_t2(csv_file, bin_file);
+                if(res < 1)
+                    printf("Falha no processamento do arquivo.");
+                else 
+                    binarioNaTela(name_bin);
             }else    
                 printf("Falha no processamento do arquivo.");
             
-            if(file_bin != NULL) fclose(file_bin);
-            if(file_csv != NULL) fclose(file_csv);  
+            if(bin_file != NULL) fclose(bin_file);
+            if(csv_file != NULL) fclose(csv_file);  
             break;
 
         case 2:     // SELECT .. FROM
             read_word(type_file, stdin);
             read_word(name_bin, stdin);
-            file_bin = fopen(name_bin, "rb");
+            bin_file = fopen(name_bin, "rb");
 
             res = 0;
             if(strcmp(type_file, "tipo1") == 0){
-                res = select_from_r1(file_bin);
+                res = select_from_r1(bin_file);
                 if(res == -2)
                     printf("Falha no processamento do arquivo.");
             }else if(strcmp(type_file, "tipo2") == 0){
-                //res = select_from_r1(file_bin);
+                //res = select_from_r1(bin_file);
                 //if(res == -2)
                 //    printf("Falha no processamento do arquivo.");
             }else    
                 printf("Falha no processamento do arquivo.");
 
-            if(file_bin != NULL) fclose(file_bin);
+            if(bin_file != NULL) fclose(bin_file);
             break;
 
         case 3:;     // SELECT .. FROM .. WHERE
             read_word(type_file, stdin);
             read_word(name_bin, stdin);
-            file_bin = fopen(name_bin, "rb");
+            bin_file = fopen(name_bin, "rb");
 
             //quantidade de campos buscados
             int n;
@@ -89,9 +92,9 @@ int main(){
             res = 1;
 
             if(strcmp(type_file, "tipo1") == 0){
-                res = select_from_where_r1(file_bin, array, n);                
+                res = select_from_where_r1(bin_file, array, n);                
             }else if(strcmp(type_file, "tipo2") == 0){
-                //select_from_where_r2(file_bin, array, n);
+                //select_from_where_r2(bin_file, array, n);
             }else    
                 printf("Falha no processamento do arquivo.");
 
@@ -101,7 +104,7 @@ int main(){
                 printf("Registro inexistente.");
 
             free_array_fields_sfw(array, n);
-            if(file_bin != NULL) fclose(file_bin);
+            if(bin_file != NULL) fclose(bin_file);
             break;
 
         case 4:     //busca por RRN 
@@ -110,9 +113,9 @@ int main(){
             int rrn; scanf("%d", &rrn);
 
             Record_t1* r1 = create_record_t1();
-            FILE* file_bin = fopen(name_bin, "rb");
+            FILE* bin_file = fopen(name_bin, "rb");
             
-            res = search_rrn(type_file, file_bin, rrn, r1);
+            res = search_rrn(type_file, bin_file, rrn, r1);
             if(res == -2)
                 printf("Falha no processamento do arquivo."); 
             else if(res == -1)
@@ -121,7 +124,7 @@ int main(){
                 print_r1(r1);
 
             free_rec_t1(r1);
-            if(file_bin != NULL) fclose(file_bin);  
+            if(bin_file != NULL) fclose(bin_file);  
             break;
     }
 
