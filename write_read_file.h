@@ -1,7 +1,3 @@
-int write_bytes_char(FILE* file, char* string, int amount_items);
-
-int write_bytes_int(FILE* file, int* value, int amount_items);
-
 /* Retorna 1 se ha uma palavra, 0 se nao ha ou -1 se houve erro */
 int check_field(FILE* file);
 
@@ -9,7 +5,7 @@ int check_field(FILE* file);
     Retorna 1 se ocorreu tudo correto
             0 se o campo eh vazio
            -1 se houve erro na leitura                  */
-int read_field_int(FILE* file, int* value);
+int read_int_field(FILE* file, int* value);
 
 /*  Remove o header do arquivo csv */
 int remove_header(FILE* file_csv);
@@ -18,7 +14,7 @@ int remove_header(FILE* file_csv);
     Retorna 1 se ocorreu tudo correto
             0 se o campo eh vazio
            -1 se houve erro na leitura */
-int read_field_char(char* string, FILE* file_csv);
+int read_char_field(char* string, FILE* file_csv);
 
 /*  Le um campo de file e atribui a variavel string
     Retorna 1 se ha valor

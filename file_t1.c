@@ -4,12 +4,13 @@
 #include "file_t1.h"
 #include "write_read_file.h"
 
-#define REG_SIZE 97          //record size
-#define BINf_HEADER_SIZE 182 //binary file_bin header size
+#define REC_SIZE 97          //record size
+#define BINf_HEADER_SIZE 182 //binary bin_file header size
 #define STR_SIZE 30          //string size
 
-int get_record_t1(FILE* file_bin, Record_t1* r1, int removed);
-void remove_trash(FILE* file_bin, int quantity);
+int get_record_t1(FILE* bin_file, Record_t1* r1, int removed);
+void remove_trash(FILE* bin_file, int quantity);
+int read_item_t1(FILE* csv_file, Record_t1* r1, FILE* file);
 
 // Registro criado para um arquivo contendo registros de tamanho fixo
 struct record_t1{
@@ -54,40 +55,44 @@ void free_rec_t1(Record_t1* r1){
     free(r1);
 }
 
-int create_table_t1(FILE* file_csv, FILE* file_bin){
-    if(file_bin == NULL || file_csv == NULL)
+int create_table_t1(FILE* csv_file, FILE* bin_file){
+    if(bin_file == NULL || csv_file == NULL)
         return -2;
     
+    FILE* file = fopen("file.txt", "w");
+    fprintf(file, "id,anoFabricacao,cidade,quantidade,siglaEstado,marca,modelo\n");
+    //fwrite("id,anoFabricacao,cidade,quantidade,siglaEstado,marca,modelo\n", 60, sizeof(char), file);
     Record_t1* r1 = create_record_t1();
-    if(write_header_t1(file_bin) == -2)
+    if(write_header_t1(bin_file) == -2)
         return -1;
 
-    while(read_item_t1(file_csv, r1) > 0){
-        write_item_t1(file_bin, r1);
+    while(read_item_t1(csv_file, r1, file) > 0){
+        write_item_t1(bin_file, r1);
     }
 
     //muda status para 1 (arquivo consistente de dados)
-    fseek(file_bin, 0, SEEK_SET);
-    fwrite("1", 1, sizeof(char), file_bin);
+    fseek(bin_file, 0, SEEK_SET);
+    fwrite("1", 1, sizeof(char), bin_file);
     free_rec_t1(r1);
+    fclose(file);
     return 1;
 }
 
-int select_from_r1(FILE* file_bin){
-    if(file_bin == NULL)    
+int select_from_r1(FILE* bin_file){
+    if(bin_file == NULL)    
         return -2;
 
     Record_t1* r1 = create_record_t1();
     //remover header
     char header[BINf_HEADER_SIZE];
-    fread(header, BINf_HEADER_SIZE, sizeof(char), file_bin);
+    fread(header, BINf_HEADER_SIZE, sizeof(char), bin_file);
 
     int record_size = 0;
     int i = 0;
-    while((record_size = get_record_t1(file_bin, r1, 0)) != -2){
+    while((record_size = get_record_t1(bin_file, r1, 0)) != -2){
         //remove o lixo restante ao fim de cada registro
         if(record_size != -1){
-            remove_trash(file_bin, record_size);
+            remove_trash(bin_file, record_size);
             print_r1(r1);
         }
     }
@@ -96,8 +101,8 @@ int select_from_r1(FILE* file_bin){
     return 1;
 }
 
-int select_from_where_r1(FILE* file_bin, char** fields, int n){
-    if(file_bin == NULL || fields == NULL)
+int select_from_where_r1(FILE* bin_file, char** fields, int n){
+    if(bin_file == NULL || fields == NULL)
         return -2;
 
     //registro que sera comparado
@@ -106,9 +111,9 @@ int select_from_where_r1(FILE* file_bin, char** fields, int n){
     int N = n;
     //quantidade de registros a serem buscados
     int max_rrn = 0;
-    fseek(file_bin, 174, SEEK_SET);
-    fread(&max_rrn, 1, sizeof(int), file_bin);
-    fseek(file_bin, 4, SEEK_CUR);
+    fseek(bin_file, 174, SEEK_SET);
+    fread(&max_rrn, 1, sizeof(int), bin_file);
+    fseek(bin_file, 4, SEEK_CUR);
     
     //ira armazenar quantos registros buscados foram encontrados
     int finded = 0;
@@ -118,7 +123,7 @@ int select_from_where_r1(FILE* file_bin, char** fields, int n){
     int error = 1;
 
     while(max_rrn-- > 0){
-        status = get_record_t1(file_bin, r1, 0);
+        status = get_record_t1(bin_file, r1, 0);
         if(status == -1) // registro excluido
             error = -1;
         else if(status == -2){ // erro de leitura
@@ -179,161 +184,225 @@ int select_from_where_r1(FILE* file_bin, char** fields, int n){
         error = 1;
 
         //manda o ponteiro ate o proximo registro
-        if(status > 0 && status < REG_SIZE)
-            fseek(file_bin, REG_SIZE-status, SEEK_CUR);
+        if(status > 0 && status < REC_SIZE)
+            fseek(bin_file, REC_SIZE-status, SEEK_CUR);
     }
 
     free_rec_t1(r1);
     return finded;
 }
 
-int search_rrn(char* type_file, FILE* file_bin, int rrn, Record_t1* r1){
-    if(file_bin == NULL || strcmp(type_file, "tipo1") != 0)
+int search_rrn(char* type_file, FILE* bin_file, int rrn, Record_t1* r1){
+    if(bin_file == NULL || strcmp(type_file, "tipo1") != 0)
         return -2;
     
     //verifica se eh um RRN existente
-    fseek(file_bin, 174, SEEK_SET);
+    fseek(bin_file, 174, SEEK_SET);
     int x = 0;
-    fread(&x, 1, sizeof(int), file_bin);
+    fread(&x, 1, sizeof(int), bin_file);
     if(rrn >= x)
         return -1;
     
     //manda o ponteiro ate o registro
-    fseek(file_bin, (rrn*REG_SIZE)+BINf_HEADER_SIZE, SEEK_SET);
+    fseek(bin_file, (rrn*REC_SIZE)+BINf_HEADER_SIZE, SEEK_SET);
 
-    if(get_record_t1(file_bin, r1, 0) < 0)
+    if(get_record_t1(bin_file, r1, 0) < 1)
         return -1;
 
     return 1;
 }
 
-int write_header_t1(FILE* file_bin){
-    if(file_bin == NULL)    
+int write_header_t1(FILE* bin_file){
+    if(bin_file == NULL)    
         return -2;
 
     //valores para serem salvos como padrao
     int i = 0, ni = -1;
-    fwrite("0", 1, sizeof(char), file_bin);                        //status
-    fwrite(&ni, 1, sizeof(int), file_bin);                         //topo
+    fwrite("0", 1, sizeof(char), bin_file);                        //status
+    fwrite(&ni, 1, sizeof(int), bin_file);                         //topo
     fwrite("LISTAGEM DA FROTA DOS VEICULOS NO BRASIL",
-            40, sizeof(char), file_bin);                           //descricao
-    fwrite("CODIGO IDENTIFICADOR: ", 22, sizeof(char), file_bin);  //desC1
-    fwrite("ANO DE FABRICACAO: ", 19, sizeof(char), file_bin);     //desC2
-    fwrite("QUANTIDADE DE VEICULOS: ", 24, sizeof(char), file_bin);//desC3
-    fwrite("ESTADO: ", 8, sizeof(char), file_bin);                 //desC4
-    fwrite("0", 1, sizeof(char), file_bin);                        //codC5
-    fwrite("NOME DA CIDADE: ", 16, sizeof(char), file_bin);        //desC5
-    fwrite("1", 1, sizeof(char), file_bin);                        //codC6
-    fwrite("MARCA DO VEICULO: ", 18, sizeof(char), file_bin);      //desC6
-    fwrite("2", 1, sizeof(char), file_bin);                        //codC7
-    fwrite("MODELO DO VEICULO: ", 19, sizeof(char), file_bin);     //desC7
-    fwrite(&i, 1, sizeof(int), file_bin);                          //proxRRN
-    fwrite(&i, 1, sizeof(int), file_bin);                          //nroRegRem
+            40, sizeof(char), bin_file);                           //descricao
+    fwrite("CODIGO IDENTIFICADOR: ", 22, sizeof(char), bin_file);  //desC1
+    fwrite("ANO DE FABRICACAO: ", 19, sizeof(char), bin_file);     //desC2
+    fwrite("QUANTIDADE DE VEICULOS: ", 24, sizeof(char), bin_file);//desC3
+    fwrite("ESTADO: ", 8, sizeof(char), bin_file);                 //desC4
+    fwrite("0", 1, sizeof(char), bin_file);                        //codC5
+    fwrite("NOME DA CIDADE: ", 16, sizeof(char), bin_file);        //desC5
+    fwrite("1", 1, sizeof(char), bin_file);                        //codC6
+    fwrite("MARCA DO VEICULO: ", 18, sizeof(char), bin_file);      //desC6
+    fwrite("2", 1, sizeof(char), bin_file);                        //codC7
+    fwrite("MODELO DO VEICULO: ", 19, sizeof(char), bin_file);     //desC7
+    fwrite(&i, 1, sizeof(int), bin_file);                          //proxRRN
+    fwrite(&i, 1, sizeof(int), bin_file);                          //nroRegRem
     return 1;
 }
 
-int read_item_t1(FILE* file_csv, Record_t1* r1){
-    if(file_csv == NULL || r1 == NULL)
+/* int read_item_t1(FILE* csv_file, Record_t1* r1, FILE* file){
+    if(csv_file == NULL || r1 == NULL)
         return -2;
 
     char c;
+    char num[20];
     //id (sempre exite um e eh != 0)
-    if(read_field_int(file_csv, &(r1->id)) == -1)
+    if(read_int_field(csv_file, &(r1->id)) == -1)
         return -1;
-    //ano
-    if(read_field_int(file_csv, &r1->ano) == -1)
-        r1->ano = -1;
 
+    sprintf(num, "%d", r1->id);
+    fprintf(file, "%s", num);
+    fprintf(file, "%s", ",");
+    //itoa(r1->id, num, 10);
+    //printf("%s\n", num);
+    //ano
+    if(read_int_field(csv_file, &r1->ano) == -1)
+        r1->ano = -1;
+    else{
+        sprintf(num, "%d", r1->ano);
+        //itoa(r1->ano, num, 10);
+        fprintf(file, "%s", num);
+    }
+    fprintf(file, "%s", ",");
     //cidade
-    if(read_field_char(r1->cidade, file_csv) < 1){
-        r1->cidade[0]  = '\0';
+    if(read_char_field(r1->cidade, csv_file) < 1)   
         r1->tam_cidade = 0;
-    }else
+    else{
         r1->tam_cidade = strlen(r1->cidade);
+        fprintf(file, "%s", r1->cidade);
+        //fwrite(r1->cidade, r1->tam_cidade, sizeof(char), file);
+    }
+    fprintf(file, "%s", ",");
     
     //quantidade
-    if(read_field_int(file_csv, &r1->qtt) == -1)
+    if(read_int_field(csv_file, &r1->qtt) == -1)
+        r1->qtt = -1;
+    else{
+        sprintf(num, "%d", r1->qtt);
+        //itoa(r1->qtt, num, 10);
+        fprintf(file, "%s", num);
+    }
+    fprintf(file, "%s", ",");
+    //sigla
+    if(read_char_field(r1->sigla, csv_file) < 1){
+        r1->sigla[0] = '$';
+        r1->sigla[1] = '$';
+    }else
+        fprintf(file, "%c%c", r1->sigla[0], r1->sigla[1]);
+    fprintf(file, "%s", ",");
+    //marca
+    if(read_char_field(r1->marca, csv_file) < 1)
+        r1->tam_marca = 0;
+    else{
+        r1->tam_marca = strlen(r1->marca);
+        fprintf(file, "%s", r1->marca);
+    }
+    fprintf(file, "%s", ",");
+    //modelo
+    if(read_char_field(r1->modelo, csv_file) < 1)
+        r1->tam_modelo = 0;
+    else{
+        r1->tam_modelo = strlen(r1->modelo);
+        fprintf(file, "%s", r1->modelo);
+    }
+    fprintf(file, "%s", "\n");
+    //remove o '\n'
+    c = fgetc(csv_file);
+    if(c != '\n')
+        ungetc(c, csv_file);
+
+    return 1;
+} */
+
+int read_item_t1(FILE* csv_file, Record_t1* r1, FILE* file){
+    if(csv_file == NULL || r1 == NULL)
+        return -2;
+
+    char c;
+    char num[20];
+    //id (sempre exite um e eh != 0)
+    if(read_int_field(csv_file, &(r1->id)) == -1)
+        return -1;
+    //ano
+    if(read_int_field(csv_file, &r1->ano) == -1)
+        r1->ano = -1;
+    //cidade
+    if(read_char_field(r1->cidade, csv_file) < 1)   
+        r1->tam_cidade = 0;
+    else
+        r1->tam_cidade = strlen(r1->cidade);
+    //quantidade
+    if(read_int_field(csv_file, &r1->qtt) == -1)
         r1->qtt = -1;
     //sigla
-    if(read_field_char(r1->sigla, file_csv) < 1){
+    if(read_char_field(r1->sigla, csv_file) < 1){
         r1->sigla[0] = '$';
         r1->sigla[1] = '$';
     }
     //marca
-    if(read_field_char(r1->marca, file_csv) < 1){
-        r1->marca[0]   = '\0';
+    if(read_char_field(r1->marca, csv_file) < 1)
         r1->tam_marca = 0;
-    }else
+    else
         r1->tam_marca = strlen(r1->marca);
     //modelo
-    if(read_field_char(r1->modelo, file_csv) < 1){
-        r1->modelo[0]   = '\0';
+    if(read_char_field(r1->modelo, csv_file) < 1)
         r1->tam_modelo = 0;
-    }else
+    else
         r1->tam_modelo = strlen(r1->modelo);
 
     //remove o '\n'
-    c = fgetc(file_csv);
+    c = fgetc(csv_file);
     if(c != '\n')
-        ungetc(c, file_csv);
+        ungetc(c, csv_file);
 
     return 1;
 }
 
-int write_item_t1(FILE* file_bin, Record_t1* r1){
-    if(file_bin == NULL || r1 == NULL)
-        return -1;
+int write_item_t1(FILE* bin_file, Record_t1* r1){
+    if(bin_file == NULL || r1 == NULL)
+        return -2;
 
     //busca a posicao que deve ser adicionado o registro
-    fseek(file_bin, 174, SEEK_SET);
+    fseek(bin_file, 174, SEEK_SET);
     int rrn = 0;
-    fread(&rrn, 1, sizeof(int), file_bin);
-    fseek(file_bin, BINf_HEADER_SIZE+(REG_SIZE*rrn), SEEK_SET);
+    fread(&rrn, 1, sizeof(int), bin_file);
+    fseek(bin_file, BINf_HEADER_SIZE+(REC_SIZE*rrn), SEEK_SET);
 
     //dados estaticos
     int record_size = 19;
-    fwrite(&r1->removido, 1, sizeof(char), file_bin);
-    fwrite(&r1->prox, 1, sizeof(int), file_bin);
-    fwrite(&r1->id, 1, sizeof(int), file_bin);
-    fwrite(&r1->ano, 1, sizeof(int), file_bin);
-    fwrite(&r1->qtt, 1, sizeof(int), file_bin);
-    fwrite(r1->sigla, 2, sizeof(char), file_bin);
+    fwrite(&r1->removido, 1, sizeof(char), bin_file);
+    fwrite(&r1->prox, 1, sizeof(int), bin_file);
+    fwrite(&r1->id, 1, sizeof(int), bin_file);
+    fwrite(&r1->ano, 1, sizeof(int), bin_file);
+    fwrite(&r1->qtt, 1, sizeof(int), bin_file);
+    fwrite(r1->sigla, 2, sizeof(char), bin_file);
 
     //os if's verificam se o campo nao eh nulo
     if(r1->tam_cidade > 0){
-        fwrite(&r1->tam_cidade, 1, sizeof(int), file_bin);
-        fwrite(&r1->codC5, 1, sizeof(char), file_bin);
-        fwrite(r1->cidade, r1->tam_cidade, sizeof(char), file_bin);
+        fwrite(&r1->tam_cidade, 1, sizeof(int), bin_file);
+        fwrite(&r1->codC5, 1, sizeof(char), bin_file);
+        fwrite(r1->cidade, r1->tam_cidade, sizeof(char), bin_file);
         record_size += 4 + 1 + r1->tam_cidade;
     }
     if(r1->tam_marca > 0){
-        fwrite(&r1->tam_marca, 1, sizeof(int), file_bin);
-        fwrite(&r1->codC6, 1, sizeof(char), file_bin);
-        fwrite(r1->marca, r1->tam_marca, sizeof(char), file_bin);
+        fwrite(&r1->tam_marca, 1, sizeof(int), bin_file);
+        fwrite(&r1->codC6, 1, sizeof(char), bin_file);
+        fwrite(r1->marca, r1->tam_marca, sizeof(char), bin_file);
         record_size += 4 + 1 + r1->tam_marca;
     }
-
     if(r1->tam_modelo > 0){
-        fwrite(&r1->tam_modelo, 1, sizeof(int), file_bin);
-        fwrite(&r1->codC7, 1, sizeof(char), file_bin);
-        fwrite(r1->modelo, r1->tam_modelo, sizeof(char), file_bin);
+        fwrite(&r1->tam_modelo, 1, sizeof(int), bin_file);
+        fwrite(&r1->codC7, 1, sizeof(char), bin_file);
+        fwrite(r1->modelo, r1->tam_modelo, sizeof(char), bin_file);
         record_size += 4 + 1 + r1->tam_modelo;
     }
     //-----------
     // garante que cada registro tenha 97 bytes
-    if(record_size < REG_SIZE)
-        for(int i = record_size; i < REG_SIZE; i++)
-            fwrite("$", 1, sizeof(char), file_bin);
+    if(record_size < REC_SIZE)
+        for(int i = record_size; i < REC_SIZE; i++)
+            fwrite("$", 1, sizeof(char), bin_file);
 
     //Adiciona +1 em proxRRN
-    int proxRRN = 0;
-    //buscando o valor e somando
-    fseek(file_bin, 174, SEEK_SET);
-    fread(&proxRRN, 1, sizeof(int), file_bin);
-    proxRRN++;
-    //retornando para escrever
-    fseek(file_bin, -4, SEEK_CUR);
-    fwrite(&proxRRN, 1, sizeof(int), file_bin);
+    rrn += 1;
+    fseek(bin_file, 174, SEEK_SET);
+    fwrite(&rrn, 1, sizeof(int), bin_file);
 
     return 1;
 }
@@ -341,29 +410,29 @@ int write_item_t1(FILE* file_bin, Record_t1* r1){
 /*  Le e adiciona um campo de tamanho variado ah struct r1
     Retorna: soma dos campos lidos
              -1 caso nao exista o codigo do campo lido no arquivo */
-int add_str_field(FILE* file_bin, Record_t1* r1){
+int add_str_field(FILE* bin_file, Record_t1* r1){
     int tam_str = 0;
-    fread(&tam_str, 1, sizeof(int), file_bin);
+    fread(&tam_str, 1, sizeof(int), bin_file);
     char cod = '3';
-    fread(&cod, 1, sizeof(char), file_bin);
+    fread(&cod, 1, sizeof(char), bin_file);
 
     if(cod == 48){
         //cidade
         r1->tam_cidade = tam_str;
         r1->codC5      = cod;
-        fread(r1->cidade, r1->tam_cidade, sizeof(char), file_bin);
+        fread(r1->cidade, r1->tam_cidade, sizeof(char), bin_file);
         r1->cidade[tam_str] = '\0';
     }else if(cod == 49){
         //marca
         r1->tam_marca = tam_str;
         r1->codC6      = cod;
-        fread(r1->marca, r1->tam_marca, sizeof(char), file_bin);
+        fread(r1->marca, r1->tam_marca, sizeof(char), bin_file);
         r1->marca[tam_str] = '\0';
     }else if(cod == 50){
         //modelo
         r1->tam_modelo = tam_str;
         r1->codC7      = cod;
-        fread(r1->modelo, r1->tam_modelo, sizeof(char), file_bin);
+        fread(r1->modelo, r1->tam_modelo, sizeof(char), bin_file);
         r1->modelo[tam_str] = '\0';
     }else
         return -1;
@@ -376,33 +445,33 @@ int add_str_field(FILE* file_bin, Record_t1* r1){
     Retorna (tamanho_registro em bytes) caso ocorra tudo normalmente
            -1 caso o registro tenha sido removido logicamente
            -2 caso haja erro na leitura (nao ha mais registros)   */
-int get_record_t1(FILE* file_bin, Record_t1* r1, int removed){
+int get_record_t1(FILE* bin_file, Record_t1* r1, int removed){
     int record_size = 19;
     
     //campos de tamanho fixo
-    if(fread(&r1->removido, 1, sizeof(char), file_bin) == 0)
+    if(fread(&r1->removido, 1, sizeof(char), bin_file) == 0)
         return -2; 
 
     //verifica se o registro nao foi removido logicamente
     //caso removed seja 1, ja se sabe que o campo foi removido e deve-se pular
     if(removed == 0 && r1->removido == '1'){
-        ungetc(r1->removido, file_bin);
+        ungetc(r1->removido, bin_file);
         //removendo o registro removido do buffer
-        record_size = get_record_t1(file_bin, r1, 1);
-        remove_trash(file_bin, record_size);
+        record_size = get_record_t1(bin_file, r1, 1);
+        remove_trash(bin_file, record_size);
 
         return -1;
     }
     //prox
-    fread(&r1->prox, 1, sizeof(int), file_bin);
+    fread(&r1->prox, 1, sizeof(int), bin_file);
     //id
-    fread(&r1->id, 1, sizeof(int), file_bin);
+    fread(&r1->id, 1, sizeof(int), bin_file);
     //ano
-    fread(&r1->ano, 1, sizeof(int), file_bin);
+    fread(&r1->ano, 1, sizeof(int), bin_file);
     //qtt
-    fread(&r1->qtt, 1, sizeof(int), file_bin);
+    fread(&r1->qtt, 1, sizeof(int), bin_file);
     //sigla
-    fread(&r1->sigla, 2, sizeof(char), file_bin);
+    fread(&r1->sigla, 2, sizeof(char), bin_file);
     
     char c;
     //campos de tamanho variavel
@@ -411,25 +480,25 @@ int get_record_t1(FILE* file_bin, Record_t1* r1, int removed){
     r1->tam_modelo = 0;
     
     //verifica se existem mais campos
-    fread(&c, 1, sizeof(char), file_bin);
+    fread(&c, 1, sizeof(char), bin_file);
     if(c == '$') return record_size+1; //+1 do fread(&c)    
-    else ungetc(c, file_bin);
+    else ungetc(c, bin_file);
 
-    record_size += add_str_field(file_bin, r1);
-
-    //verifica se existem mais campos
-    fread(&c, 1, sizeof(char), file_bin);
-    if(c == '$') return record_size+1; //+1 do fread(&c)
-    else ungetc(c, file_bin);
-
-    record_size += add_str_field(file_bin, r1);
+    record_size += add_str_field(bin_file, r1);
 
     //verifica se existem mais campos
-    fread(&c, 1, sizeof(char), file_bin);
+    fread(&c, 1, sizeof(char), bin_file);
     if(c == '$') return record_size+1; //+1 do fread(&c)
-    else ungetc(c, file_bin);
+    else ungetc(c, bin_file);
 
-    record_size += add_str_field(file_bin, r1);
+    record_size += add_str_field(bin_file, r1);
+
+    //verifica se existem mais campos
+    fread(&c, 1, sizeof(char), bin_file);
+    if(c == '$') return record_size+1; //+1 do fread(&c)
+    else ungetc(c, bin_file);
+
+    record_size += add_str_field(bin_file, r1);
 
     return record_size;
 }
@@ -440,15 +509,25 @@ int print_r1(Record_t1* r1){
 
     //os if's verificam se o campo nao eh nulo
     if(r1->tam_marca > 0)
-        printf("MARCA DO VEICULO: %s\n", r1->marca);    
+        printf("MARCA DO VEICULO: %s\n", r1->marca);  
+    else  
+        printf("MARCA DO VEICULO: NAO PREENCHIDO\n");  
     if(r1->tam_modelo > 0)
-        printf("MODELO DO VEICULO: %s\n", r1->modelo); 
+        printf("MODELO DO VEICULO: %s\n", r1->modelo);
+    else 
+        printf("MODELO DO VEICULO: NAO PREENCHIDO\n");
     if(r1->ano != -1)
-        printf("ANO DE FABRICACAO: %d\n", r1->ano);    
+        printf("ANO DE FABRICACAO: %d\n", r1->ano); 
+    else   
+        printf("ANO DE FABRICACAO: NAO PREENCHIDO\n"); 
     if(r1->tam_cidade > 0)
         printf("NOME DA CIDADE: %s\n", r1->cidade);
+    else
+        printf("NOME DA CIDADE: NAO PREENCHIDO\n");
     if(r1->qtt != -1)
         printf("QUANTIDADE DE VEICULOS: %d\n", r1->qtt);
+    else
+        printf("QUANTIDADE DE VEICULOS: NAO PREENCHIDO\n");
 
     printf("\n");
     return 1;
@@ -456,7 +535,7 @@ int print_r1(Record_t1* r1){
 
 /*  Remove o lixo de cada registro */
 void remove_trash(FILE* file, int quantity){
-    char trash[REG_SIZE];
+    char trash[REC_SIZE];
 
-    fread(trash, REG_SIZE-quantity, sizeof(char), file);
+    fread(trash, REC_SIZE-quantity, sizeof(char), file);
 }

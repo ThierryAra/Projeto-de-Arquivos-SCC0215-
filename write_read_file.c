@@ -28,7 +28,7 @@ int check_field(FILE* file){
     }
 }
 
-int read_field_int(FILE* file, int* value){
+int read_int_field(FILE* file, int* value){
     if(check_field(file) == -1)
         return -1;
     
@@ -39,7 +39,7 @@ int read_field_int(FILE* file, int* value){
     return 1;
 }
 
-int read_field_char(char* string, FILE* file){
+int read_char_field(char* string, FILE* file){
     char c = 0;
     int i = 0;
 
@@ -52,7 +52,7 @@ int read_field_char(char* string, FILE* file){
         string[i] = c;
         i++;
         c = fgetc(file);
-    }while(c != ',' && c != '\n' && c != '\r');
+    }while(c != ',' && c != '\r' && c != '\n' && c != EOF);
 
     string[i]  = '\0';
 
@@ -76,7 +76,7 @@ int read_word(char* string, FILE* file){
         string[i] = c;
         i++;
         c = fgetc(file);
-    }while(c != '\n' && c != '\r' && c != ' ');
+    }while(c != '\n' && c != '\r' && c != ' ' && c != EOF);
 
     string[i]  = '\0';
     return 1;
