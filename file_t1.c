@@ -44,7 +44,7 @@ Record_t1* create_record_t1(){
     r1->codC5      = '0';
     r1->codC6      = '1';
     r1->codC7      = '2';
-    r1->prox       = 0;
+    r1->prox       = -1;
     return r1;
 }
 
@@ -233,84 +233,10 @@ int write_header_t1(FILE* bin_file){
     return 1;
 }
 
-/* int read_item_t1(FILE* csv_file, Record_t1* r1, FILE* file){
-    if(csv_file == NULL || r1 == NULL)
-        return -2;
-
-    char c;
-    char num[20];
-    //id (sempre exite um e eh != 0)
-    if(read_int_field(csv_file, &(r1->id)) == -1)
-        return -1;
-
-    sprintf(num, "%d", r1->id);
-    fprintf(file, "%s", num);
-    fprintf(file, "%s", ",");
-    //itoa(r1->id, num, 10);
-    //printf("%s\n", num);
-    //ano
-    if(read_int_field(csv_file, &r1->ano) == -1)
-        r1->ano = -1;
-    else{
-        sprintf(num, "%d", r1->ano);
-        //itoa(r1->ano, num, 10);
-        fprintf(file, "%s", num);
-    }
-    fprintf(file, "%s", ",");
-    //cidade
-    if(read_char_field(r1->cidade, csv_file) < 1)   
-        r1->tam_cidade = 0;
-    else{
-        r1->tam_cidade = strlen(r1->cidade);
-        fprintf(file, "%s", r1->cidade);
-        //fwrite(r1->cidade, r1->tam_cidade, sizeof(char), file);
-    }
-    fprintf(file, "%s", ",");
-    
-    //quantidade
-    if(read_int_field(csv_file, &r1->qtt) == -1)
-        r1->qtt = -1;
-    else{
-        sprintf(num, "%d", r1->qtt);
-        //itoa(r1->qtt, num, 10);
-        fprintf(file, "%s", num);
-    }
-    fprintf(file, "%s", ",");
-    //sigla
-    if(read_char_field(r1->sigla, csv_file) < 1){
-        r1->sigla[0] = '$';
-        r1->sigla[1] = '$';
-    }else
-        fprintf(file, "%c%c", r1->sigla[0], r1->sigla[1]);
-    fprintf(file, "%s", ",");
-    //marca
-    if(read_char_field(r1->marca, csv_file) < 1)
-        r1->tam_marca = 0;
-    else{
-        r1->tam_marca = strlen(r1->marca);
-        fprintf(file, "%s", r1->marca);
-    }
-    fprintf(file, "%s", ",");
-    //modelo
-    if(read_char_field(r1->modelo, csv_file) < 1)
-        r1->tam_modelo = 0;
-    else{
-        r1->tam_modelo = strlen(r1->modelo);
-        fprintf(file, "%s", r1->modelo);
-    }
-    fprintf(file, "%s", "\n");
-    //remove o '\n'
-    c = fgetc(csv_file);
-    if(c != '\n')
-        ungetc(c, csv_file);
-
-    return 1;
-} */
-
 int read_item_t1(FILE* csv_file, Record_t1* r1){
     if(csv_file == NULL || r1 == NULL)
         return -2;
-
+        
     char c;
     char num[20];
     //id (sempre exite um e eh != 0)
@@ -364,7 +290,12 @@ int write_item_t1(FILE* bin_file, Record_t1* r1){
     //dados estaticos
     int record_size = 19;
     fwrite(&r1->removido, 1, sizeof(char), bin_file);
+    r1->prox = -1;
     fwrite(&r1->prox, 1, sizeof(int), bin_file);
+    fseek(bin_file, -4, SEEK_CUR);
+    int i;
+    fread(&i, 1, sizeof(int), bin_file);
+    printf("%d ", i);
     fwrite(&r1->id, 1, sizeof(int), bin_file);
     fwrite(&r1->ano, 1, sizeof(int), bin_file);
     fwrite(&r1->qtt, 1, sizeof(int), bin_file);
