@@ -290,12 +290,7 @@ int write_item_t1(FILE* bin_file, Record_t1* r1){
     //dados estaticos
     int record_size = 19;
     fwrite(&r1->removido, 1, sizeof(char), bin_file);
-    r1->prox = -1;
     fwrite(&r1->prox, 1, sizeof(int), bin_file);
-    fseek(bin_file, -4, SEEK_CUR);
-    int i;
-    fread(&i, 1, sizeof(int), bin_file);
-    printf("%d ", i);
     fwrite(&r1->id, 1, sizeof(int), bin_file);
     fwrite(&r1->ano, 1, sizeof(int), bin_file);
     fwrite(&r1->qtt, 1, sizeof(int), bin_file);
