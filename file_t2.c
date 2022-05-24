@@ -68,7 +68,7 @@ int write_header_t2(FILE* bin_file){
     fwrite("MARCA DO VEICULO: ", 18, sizeof(char), bin_file);      //desC6
     fwrite("2", 1, sizeof(char), bin_file);                        //codC7
     fwrite("MODELO DO VEICULO: ", 19, sizeof(char), bin_file);     //desC7
-    fwrite(&li, 1, sizeof(long int), bin_file);                    //proxRRN
+    fwrite(&li, 1, sizeof(long int), bin_file);                   //proxByteOffset
     fwrite(&i, 1, sizeof(int), bin_file);                          //nroRegRem
     return 1;                          
 }
@@ -77,6 +77,7 @@ int read_item_t2(FILE* file_csv, Record_t2* r2){
     if(file_csv == NULL || r2 == NULL)
         return -2;
 
+    r2->tam_registro = 22;
     char c;
     //id (sempre exite um e eh != 0)
     if(read_int_field(file_csv, &(r2->id)) == -1)
@@ -103,8 +104,6 @@ int read_item_t2(FILE* file_csv, Record_t2* r2){
         r2->sigla[0] = '$';
         r2->sigla[1] = '$';
     }
-
-    r2->tam_registro += 27;
 
     //marca
     if(read_char_field(r2->marca, file_csv) < 1){
@@ -135,14 +134,14 @@ int write_item_t2(FILE* bin_file, Record_t2* r2){
     if(bin_file == NULL || r2 == NULL)
         return -1;
 
-    fseek(bin_file, 178, SEEK_SET);
     //BOS means ByteOffset
     long int BOS = 0;
+    fseek(bin_file, 178, SEEK_SET);
     fread(&BOS, 1, sizeof(long int), bin_file);
-    fseek(bin_file, BINf_HEADER_SIZE + BOS, SEEK_SET);
+    BOS += BINf_HEADER_SIZE;
+    fseek(bin_file, BOS, SEEK_SET);
 
     //dados estaticos
-    int record_size = 27;
     fwrite(&r2->removido, 1, sizeof(char), bin_file);
     fwrite(&r2->tam_registro, 1, sizeof(int), bin_file);
     fwrite(&r2->prox, 1, sizeof(long int), bin_file);
@@ -156,29 +155,22 @@ int write_item_t2(FILE* bin_file, Record_t2* r2){
         fwrite(&r2->tam_cidade, 1, sizeof(int), bin_file);
         fwrite(&r2->codC5, 1, sizeof(char), bin_file);
         fwrite(r2->cidade, r2->tam_cidade, sizeof(char), bin_file);
-        record_size += 4 + 1 + r2->tam_cidade;
     }
     if(r2->tam_marca > 0){
         fwrite(&r2->tam_marca, 1, sizeof(int), bin_file);
         fwrite(&r2->codC6, 1, sizeof(char), bin_file);
         fwrite(r2->marca, r2->tam_marca, sizeof(char), bin_file);
-        record_size += 4 + 1 + r2->tam_marca;
     }
 
     if(r2->tam_modelo > 0){
         fwrite(&r2->tam_modelo, 1, sizeof(int), bin_file);
         fwrite(&r2->codC7, 1, sizeof(char), bin_file);
         fwrite(r2->modelo, r2->tam_modelo, sizeof(char), bin_file);
-        record_size += 4 + 1 + r2->tam_modelo;
     }
     
-    fseek(bin_file, 178, SEEK_SET);
     //Adiciona o novo byte offset disponivel
-    fread(&BOS, 1, sizeof(long int), bin_file);
-    //buscando o valor e somando
-    BOS = BOS + record_size;
-    //retornando para escrever
-    fseek(bin_file, -8, SEEK_CUR);
+    BOS += r2->tam_registro + 5;
+    fseek(bin_file, 178, SEEK_SET);
     fwrite(&BOS, 1, sizeof(long int), bin_file);
 
     return 1;
@@ -241,16 +233,15 @@ int add_str_field_2(FILE* bin_file, Record_t2* r2){
 }
 
 int get_record_t2(FILE* bin_file, Record_t2* r2, int removed){
-    int record_size = 19;
-    
     //campos de tamanho fixo
     if(fread(&r2->removido, 1, sizeof(char), bin_file) == 0)
         return -2; 
 
-    //verifica se o registro nao foi removido logicamente
     fread(&r2->tam_registro, 1, sizeof(int), bin_file);
+    
+    //verifica se o registro nao foi removido logicamente
     if(r2->removido == '1'){
-        fseek(bin_file, r2->tam_registro - 5, SEEK_CUR);
+        fseek(bin_file, r2->tam_registro, SEEK_CUR);
         return -1;
     }
 
@@ -265,9 +256,8 @@ int get_record_t2(FILE* bin_file, Record_t2* r2, int removed){
     //sigla
     fread(&r2->sigla, 2, sizeof(char), bin_file);
     
-    char c;
     //campos de tamanho variavel
-    int bytes_lidos = 27;
+    int bytes_lidos = 22;
     r2->tam_cidade = 0;
     r2->tam_marca  = 0;
     r2->tam_modelo = 0;
