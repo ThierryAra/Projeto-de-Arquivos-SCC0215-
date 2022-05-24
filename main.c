@@ -62,9 +62,9 @@ int main(){
                 if(res == -2)
                     printf("Falha no processamento do arquivo.");
             }else if(strcmp(type_file, "tipo2") == 0){
-                //res = select_from_r1(bin_file);
-                //if(res == -2)
-                //    printf("Falha no processamento do arquivo.");
+                res = select_from_r2(bin_file);
+                if(res == -2)
+                    printf("Falha no processamento do arquivo.");
             }else    
                 printf("Falha no processamento do arquivo.");
 

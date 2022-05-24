@@ -79,9 +79,8 @@ int select_from_r1(FILE* bin_file){
         return -2;
 
     Record_t1* r1 = create_record_t1();
-    //remover header
-    char header[BINf_HEADER_SIZE];
-    fread(header, BINf_HEADER_SIZE, sizeof(char), bin_file);
+    
+    fseek(bin_file, BINf_HEADER_SIZE, SEEK_SET);
 
     int record_size = 0;
     int i = 0;
