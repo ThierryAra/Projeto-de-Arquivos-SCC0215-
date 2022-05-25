@@ -3,21 +3,6 @@
 #include<string.h>
 #include"header.h"
 
-struct header{
-    char status;
-    char descricao[40];
-    char desC1[22];
-    char desC2[19];
-    char desC3[24];
-    char desC4[8];
-    char codC5;
-    char desC5[16];
-    char codC6;
-    char desC6[18];
-    char codC7;
-    char desC7[19];
-    int numRegRem;
-};
 
 HEADER* create_header(){
     HEADER* header = malloc(sizeof(HEADER));

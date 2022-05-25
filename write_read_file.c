@@ -1,7 +1,5 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include "file_t1.h"
-#include "file_t2.h"
 
 int remove_header(FILE* file_csv){
     char header[100];

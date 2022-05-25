@@ -1,5 +1,5 @@
-objects = main.c file_t1.c file_t2.c write_read_file.c header.c
-headers = file_t1.h file_t2.h write_read_file.h header.h
+objects = main.c record.c write_read_file.c header.c
+headers = record.h write_read_file.h header.h
 executable = run
 
 all:
@@ -13,3 +13,8 @@ valgrind: all
 
 zip:
 	zip thierry.zip $(objects) $(headers) $(bin) Makefile 
+
+git: 
+	git add .
+	git commit -m "Trabalho 1 pronto!"
+	git push

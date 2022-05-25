@@ -6,8 +6,7 @@
 #include<string.h>
 #include<stdlib.h>
 #include"write_read_file.h"
-#include"file_t1.h"
-#include"file_t2.h"
+#include"record.h"
 
 int main(){
 
@@ -33,21 +32,20 @@ int main(){
             bin_file = fopen(name_bin, "wb+");
 
             if(strcmp(type_file, "tipo1") == 0){
-                res = create_table_t1(csv_file, bin_file);
+                res = create_table(csv_file, bin_file, 1);
                 if(res < 1)
                     printf("Falha no processamento do arquivo.");
-                else
-                    binarioNaTela(name_bin);
             }else if(strcmp(type_file, "tipo2") == 0){
-                res = create_table_t2(csv_file, bin_file);
+                res = create_table(csv_file, bin_file, 2);
                 if(res < 1)
                     printf("Falha no processamento do arquivo.");
-                else 
-                    binarioNaTela(name_bin);
             }else    
                 printf("Falha no processamento do arquivo.");
             
-            if(bin_file != NULL) fclose(bin_file);
+            if(res == 1 && bin_file != NULL){
+                fclose(bin_file);
+                binarioNaTela(name_bin);
+            }
             if(csv_file != NULL) fclose(csv_file);  
             break;
 
@@ -58,11 +56,11 @@ int main(){
 
             res = 0;
             if(strcmp(type_file, "tipo1") == 0){
-                res = select_from_r1(bin_file);
+                res = select_from(bin_file, 1);
                 if(res == -2)
                     printf("Falha no processamento do arquivo.");
             }else if(strcmp(type_file, "tipo2") == 0){
-                res = select_from_r2(bin_file);
+                res = select_from(bin_file, 2);
                 if(res == -2)
                     printf("Falha no processamento do arquivo.");
             }else    
@@ -92,9 +90,9 @@ int main(){
             res = 1;
 
             if(strcmp(type_file, "tipo1") == 0){
-                res = select_from_where_r1(bin_file, array, n);                
+                res = select_from_where(bin_file, array, n, 1);                
             }else if(strcmp(type_file, "tipo2") == 0){
-                select_from_where_r2(bin_file, array, n);
+                res = select_from_where(bin_file, array, n, 2);
             }else    
                 printf("Falha no processamento do arquivo.");
 
@@ -112,7 +110,7 @@ int main(){
             read_word(name_bin, stdin);
             int rrn; scanf("%d", &rrn);
 
-            Record_t1* r1 = create_record_t1();
+            RECORD* r1 = create_record();
             FILE* bin_file = fopen(name_bin, "rb");
             
             res = search_rrn(type_file, bin_file, rrn, r1);
@@ -121,9 +119,9 @@ int main(){
             else if(res == -1)
                 printf("Registro inexistente.");
             else
-                print_r1(r1);
+                print_record(r1);
 
-            free_rec_t1(r1);
+            free_rec(r1);
             if(bin_file != NULL) fclose(bin_file);  
             break;
     }
