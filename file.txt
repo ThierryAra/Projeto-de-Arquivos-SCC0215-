@@ -1,1 +1,0 @@
-id,anoFabricacao,cidade,quantidade,siglaEstado,marca,modelo

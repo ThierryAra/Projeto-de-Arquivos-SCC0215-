@@ -36,7 +36,7 @@ int main(){
                 res = create_table_t1(csv_file, bin_file);
                 if(res < 1)
                     printf("Falha no processamento do arquivo.");
-                else 
+                else
                     binarioNaTela(name_bin);
             }else if(strcmp(type_file, "tipo2") == 0){
                 res = create_table_t2(csv_file, bin_file);
@@ -94,7 +94,7 @@ int main(){
             if(strcmp(type_file, "tipo1") == 0){
                 res = select_from_where_r1(bin_file, array, n);                
             }else if(strcmp(type_file, "tipo2") == 0){
-                //select_from_where_r2(bin_file, array, n);
+                select_from_where_r2(bin_file, array, n);
             }else    
                 printf("Falha no processamento do arquivo.");
 

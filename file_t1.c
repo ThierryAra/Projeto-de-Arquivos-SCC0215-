@@ -3,12 +3,13 @@
 #include <string.h>
 #include "file_t1.h"
 #include "write_read_file.h"
+#include "header.h"
 
-#define REC_SIZE 97          //record size
-#define BINf_HEADER_SIZE 182 //binary bin_file header size
-#define STR_SIZE 30          //string size
+#define REC_SIZE 97          //tamanho do registro
+#define BINf_HEADER_SIZE 182 //tamanho do cabecalho
+#define STR_SIZE 30          //tamanho da string
 
-int get_record_t1(FILE* bin_file, Record_t1* r1, int removed);
+int get_record_t1(FILE* bin_file, Record_t1* r1);
 void remove_trash(FILE* bin_file, int quantity);
 int read_item_t1(FILE* csv_file, Record_t1* r1);
 
@@ -59,8 +60,10 @@ int create_table_t1(FILE* csv_file, FILE* bin_file){
     if(csv_file == NULL || bin_file == NULL)
         return -2;
     
+    HEADER* header = create_header();
+    
     Record_t1* r1 = create_record_t1();
-    if(write_header_t1(bin_file) == -2)
+    if(write_header(header, bin_file, 1) == -2)
         return -1;
 
     while(read_item_t1(csv_file, r1) > 0){
@@ -68,9 +71,9 @@ int create_table_t1(FILE* csv_file, FILE* bin_file){
     }
 
     //muda status para 1 (arquivo consistente de dados)
-    fseek(bin_file, 0, SEEK_SET);
-    fwrite("1", 1, sizeof(char), bin_file);
+    atualiza_status(header, bin_file);
     free_rec_t1(r1);
+    free_header(header);
     return 1;
 }
 
@@ -78,13 +81,19 @@ int select_from_r1(FILE* bin_file){
     if(bin_file == NULL)    
         return -2;
 
+    //verifica se o arquivo esta inconsistente
+    int status = verifica_status(bin_file);
+    if(status == 0 || status == -1)
+        return -2;
+
     Record_t1* r1 = create_record_t1();
     
+    //pula o header
     fseek(bin_file, BINf_HEADER_SIZE, SEEK_SET);
 
     int record_size = 0;
     int i = 0;
-    while((record_size = get_record_t1(bin_file, r1, 0)) != -2){
+    while((record_size = get_record_t1(bin_file, r1)) != -2){
         //remove o lixo restante ao fim de cada registro
         if(record_size != -1){
             remove_trash(bin_file, record_size);
@@ -100,34 +109,34 @@ int select_from_where_r1(FILE* bin_file, char** fields, int n){
     if(bin_file == NULL || fields == NULL)
         return -2;
 
+    //verifica se o arquivo esta inconsistente
+    int status = verifica_status(bin_file);
+    if(status == 0 || status == -1)
+        return -2;
+
     //registro que sera comparado
     Record_t1* r1 = create_record_t1();
-    //armazena n para ser retomado ao final do loop interno
-    int N = n;
-    //quantidade de registros a serem buscados
-    int max_rrn = 0;
-    fseek(bin_file, 174, SEEK_SET);
-    fread(&max_rrn, 1, sizeof(int), bin_file);
-    fseek(bin_file, 4, SEEK_CUR);
+
+    fseek(bin_file, BINf_HEADER_SIZE, SEEK_SET);
     
     //ira armazenar quantos registros buscados foram encontrados
-    int finded = 0;
+    int found = 0;
     //verifica se o registro foi removido e contem o tamanho do registro lido
-    int status;
+    int record_size = 0;
     //verifica se o registro possui os campos/valores iguais ao do registro buscado
     int error = 1;
 
-    while(max_rrn-- > 0){
-        status = get_record_t1(bin_file, r1, 0);
-        if(status == -1) // registro excluido
+    //indice de fields
+    int i = 0;
+    while((record_size = get_record_t1(bin_file, r1)) != -2){
+        if(record_size == -1) // registro excluido
             error = -1;
-        else if(status == -2){ // erro de leitura
-            free_rec_t1(r1);
-            return -1;
-        }
+        
+        int ftel_ini = ftell(bin_file);
+        //manda o ponteiro ate o proximo registro
+        remove_trash(bin_file, record_size);
+        int ftel_fim = ftell(bin_file);
 
-        //indice de fields
-        int i = 0;
         //mantem enquanto os campos de array sao iguais a r1
         while (error > 0 && i < n*2){
             if(strcmp(fields[i], "id") == 0){
@@ -163,7 +172,8 @@ int select_from_where_r1(FILE* bin_file, char** fields, int n){
                  if(r1->tam_modelo <= 0 || strcmp(fields[i+1], r1->modelo) != 0){
                     error = -1;
                 }
-            }
+            }else
+                error = -1;
 
             //proximo campo em fields
             i += 2;
@@ -172,19 +182,16 @@ int select_from_where_r1(FILE* bin_file, char** fields, int n){
         //verifica se realmente eh o registro buscado
         if(error > 0){
             print_r1(r1);
-            finded++;
+            found++;
         }
 
         //reseta error para uma proxima busca
         error = 1;
-
-        //manda o ponteiro ate o proximo registro
-        if(status > 0 && status < REC_SIZE)
-            fseek(bin_file, REC_SIZE-status, SEEK_CUR);
+        i = 0;
     }
 
     free_rec_t1(r1);
-    return finded;
+    return found;
 }
 
 int search_rrn(char* type_file, FILE* bin_file, int rrn, Record_t1* r1){
@@ -201,34 +208,9 @@ int search_rrn(char* type_file, FILE* bin_file, int rrn, Record_t1* r1){
     //manda o ponteiro ate o registro
     fseek(bin_file, (rrn*REC_SIZE)+BINf_HEADER_SIZE, SEEK_SET);
 
-    if(get_record_t1(bin_file, r1, 0) < 1)
+    if(get_record_t1(bin_file, r1) < 1)
         return -1;
 
-    return 1;
-}
-
-int write_header_t1(FILE* bin_file){
-    if(bin_file == NULL)    
-        return -2;
-
-    //valores para serem salvos como padrao
-    int i = 0, ni = -1;
-    fwrite("0", 1, sizeof(char), bin_file);                        //status
-    fwrite(&ni, 1, sizeof(int), bin_file);                         //topo
-    fwrite("LISTAGEM DA FROTA DOS VEICULOS NO BRASIL",
-            40, sizeof(char), bin_file);                           //descricao
-    fwrite("CODIGO IDENTIFICADOR: ", 22, sizeof(char), bin_file);  //desC1
-    fwrite("ANO DE FABRICACAO: ", 19, sizeof(char), bin_file);     //desC2
-    fwrite("QUANTIDADE DE VEICULOS: ", 24, sizeof(char), bin_file);//desC3
-    fwrite("ESTADO: ", 8, sizeof(char), bin_file);                 //desC4
-    fwrite("0", 1, sizeof(char), bin_file);                        //codC5
-    fwrite("NOME DA CIDADE: ", 16, sizeof(char), bin_file);        //desC5
-    fwrite("1", 1, sizeof(char), bin_file);                        //codC6
-    fwrite("MARCA DO VEICULO: ", 18, sizeof(char), bin_file);      //desC6
-    fwrite("2", 1, sizeof(char), bin_file);                        //codC7
-    fwrite("MODELO DO VEICULO: ", 19, sizeof(char), bin_file);     //desC7
-    fwrite(&i, 1, sizeof(int), bin_file);                          //proxRRN
-    fwrite(&i, 1, sizeof(int), bin_file);                          //nroRegRem
     return 1;
 }
 
@@ -279,7 +261,7 @@ int read_item_t1(FILE* csv_file, Record_t1* r1){
 int write_item_t1(FILE* bin_file, Record_t1* r1){
     if(bin_file == NULL || r1 == NULL)
         return -2;
-
+        
     //busca a posicao que deve ser adicionado o registro
     fseek(bin_file, 174, SEEK_SET);
     int rrn = 0;
@@ -337,27 +319,22 @@ int add_str_field(FILE* bin_file, Record_t1* r1){
     fread(&string_size, 1, sizeof(int), bin_file);
     char cod = '3';
     fread(&cod, 1, sizeof(char), bin_file);
-
-    if(cod == 48){
+    if(cod == '0'){
         //cidade (0)
         r1->tam_cidade = string_size;
-        r1->codC5      = cod;
         fread(r1->cidade, r1->tam_cidade, sizeof(char), bin_file);
         r1->cidade[string_size] = '\0';
-    }else if(cod == 49){
+    }else if(cod == '1'){
         //marca (1)
         r1->tam_marca = string_size;
-        r1->codC6      = cod;
         fread(r1->marca, r1->tam_marca, sizeof(char), bin_file);
         r1->marca[string_size] = '\0';
-    }else if(cod == 50){
+    }else if(cod == '2'){
         //modelo (2)
         r1->tam_modelo = string_size;
-        r1->codC7      = cod;
         fread(r1->modelo, r1->tam_modelo, sizeof(char), bin_file);
         r1->modelo[string_size] = '\0';
-    }else
-        return -1;
+    }
 
     return string_size+4+1;
 }
@@ -367,21 +344,17 @@ int add_str_field(FILE* bin_file, Record_t1* r1){
     Retorna (tamanho_registro em bytes) caso ocorra tudo normalmente
            -1 caso o registro tenha sido removido logicamente
            -2 caso haja erro na leitura (nao ha mais registros)   */
-int get_record_t1(FILE* bin_file, Record_t1* r1, int removed){
+int get_record_t1(FILE* bin_file, Record_t1* r1){
     int record_size = 19;
     
     //campos de tamanho fixo
     if(fread(&r1->removido, 1, sizeof(char), bin_file) == 0)
         return -2; 
-
+   
     //verifica se o registro nao foi removido logicamente
     //caso removed seja 1, ja se sabe que o campo foi removido e deve-se pular
-    if(removed == 0 && r1->removido == '1'){
-        ungetc(r1->removido, bin_file);
-        //removendo o registro removido do buffer
-        record_size = get_record_t1(bin_file, r1, 1);
-        remove_trash(bin_file, record_size);
-
+    if(r1->removido == '1'){
+        fseek(bin_file, REC_SIZE-1, SEEK_CUR);
         return -1;
     }
     //prox
@@ -403,21 +376,22 @@ int get_record_t1(FILE* bin_file, Record_t1* r1, int removed){
     
     //verifica se existem mais campos
     fread(&c, 1, sizeof(char), bin_file);
-    if(c == '$') return record_size+1; //+1 do fread(&c)    
+    if(c == '$') return (record_size+1); //+1 do fread(&c)    
+    else ungetc(c, bin_file);
+    record_size += add_str_field(bin_file, r1);
+    if(record_size == REC_SIZE) return REC_SIZE;
+    
+     //verifica se existem mais campos
+    fread(&c, 1, sizeof(char), bin_file);
+    if(c == '$') return (record_size+1); //+1 do fread(&c)    
     else ungetc(c, bin_file);
 
     record_size += add_str_field(bin_file, r1);
-
+    if(record_size == REC_SIZE) return REC_SIZE;
+    
     //verifica se existem mais campos
     fread(&c, 1, sizeof(char), bin_file);
-    if(c == '$') return record_size+1; //+1 do fread(&c)
-    else ungetc(c, bin_file);
-
-    record_size += add_str_field(bin_file, r1);
-
-    //verifica se existem mais campos
-    fread(&c, 1, sizeof(char), bin_file);
-    if(c == '$') return record_size+1; //+1 do fread(&c)
+    if(c == '$') return (record_size+1); //+1 do fread(&c)    
     else ungetc(c, bin_file);
 
     record_size += add_str_field(bin_file, r1);
@@ -457,7 +431,7 @@ int print_r1(Record_t1* r1){
 
 /*  Remove o lixo de cada registro */
 void remove_trash(FILE* file, int quantity){
-    char trash[REC_SIZE];
-
-    fread(trash, REC_SIZE-quantity, sizeof(char), file);
+    //char trash[REC_SIZE];
+    fseek(file, REC_SIZE - quantity, SEEK_CUR);
+    //fread(trash, REC_SIZE-quantity, sizeof(char), file);
 }

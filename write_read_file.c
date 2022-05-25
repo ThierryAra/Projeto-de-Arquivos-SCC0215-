@@ -95,7 +95,7 @@ void scan_quote_strings(char* string){
         string[i] = c;
         i++;
         c = getchar();
-    }while(c != '\n' && c != '\r' && c != '"');
+    }while(c != '\n' && c != '\r' && c != '"' && c != EOF);
 
     string[i]  = '\0';
     //return 1;
