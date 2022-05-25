@@ -13,7 +13,7 @@ int remove_header(FILE* file_csv);
 /*  Le um campo de string do arquivo csv
     Retorna 1 se ocorreu tudo correto
             0 se o campo eh vazio
-           -1 se houve erro na leitura */
+           -1 se houve erro na leitura  */
 int read_char_field(char* string, FILE* file_csv);
 
 /*  Le um campo de file e atribui a variavel string

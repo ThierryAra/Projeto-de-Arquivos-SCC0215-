@@ -86,6 +86,7 @@ int create_table(FILE* csv_file, FILE* bin_file, int type_file){
         }
     }
 
+    // Altera o campo proxRRN ou ProxByteOffset
     if(type_file == 1){
         fseek(bin_file, 0, SEEK_END);
         int BOS = (ftell(bin_file) - STATIC_REC_HEADER) / STATIC_REC_SIZE;
@@ -124,7 +125,7 @@ int select_from(FILE* bin_file, int type_file){
     int record_size = 0;
     int i = 0;
     while((record_size = get_record(bin_file, r, header, type_file)) != -2)
-        if(record_size != -1)
+        if(record_size != -1) //verifica se o registro nao esta removido
             print_record(r);
     
     free(header);

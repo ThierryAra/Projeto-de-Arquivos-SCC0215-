@@ -2,17 +2,13 @@
 #include<stdlib.h>
 
 int remove_header(FILE* file_csv){
-    char header[100];
-    //verifica se a leitura foi feita corretamente
-    if(fscanf(file_csv, "%s[\r]", header) == 0)
-        return -1;
-    else{
-        header[62] = '\0';
-        char c;
-        fscanf(file_csv, "%c", &c);
-        fscanf(file_csv, "%c", &c);
-        return 1;
-    }
+    char c;
+
+    do{
+        c = fgetc(file_csv);
+    }while(c != EOF && c != '\n');
+
+    return 1;
 }
 
 int check_field(FILE* file){
