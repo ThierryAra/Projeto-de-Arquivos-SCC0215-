@@ -96,7 +96,7 @@ int create_table(FILE* csv_file, FILE* bin_file, int type_file){
         fseek(bin_file, 0, SEEK_END);
         long int BOS = ftell(bin_file);
         fseek(bin_file, 178, SEEK_SET);
-        fwrite(&BOS, 1, sizeof(int), bin_file);
+        fwrite(&BOS, 1, sizeof(long int), bin_file);
     }
 
     //muda status para 1 (arquivo consistente de dados)
