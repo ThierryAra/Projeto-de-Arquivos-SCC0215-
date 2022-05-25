@@ -1,5 +1,5 @@
-objects = main.c file_t1.c file_t2.c write_read_file.c
-headers = file_t1.h file_t2.h write_read_file.h
+objects = main.c file_t1.c file_t2.c write_read_file.c header.c
+headers = file_t1.h file_t2.h write_read_file.h header.h
 executable = run
 
 all:

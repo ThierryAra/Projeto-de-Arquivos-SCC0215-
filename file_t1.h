@@ -1,4 +1,3 @@
-#include"write_read_file.h"
 
 typedef struct record_t1 Record_t1;
 
@@ -20,11 +19,6 @@ int create_table_t1(FILE* csv_file, FILE* bin_file);
            -1 caso nao haja mais registros a serem lidos
            -2 caso algum dos parametros seja nulo        */
 int read_item_t1(FILE* csv_file, Record_t1* r1);
-
-/*  Escreve no arquivo .bin o header dos arquivos de tipo1
-    Retorna 1 caso ocorra tudo corretamente
-           -2 caso o parametro estejam corrompido       */
-int write_header_t1(FILE* bin_file);
 
 /*  Escreve um registro (r1) no arquivo .bin 
     Retorna 1 caso nao haja nenhum erro
