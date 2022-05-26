@@ -1,6 +1,22 @@
+/*********************************************************************************
+ |                  USP - University of São Paulo (Brazil)                       |
+ |          ICMC - Institute of Mathematical and Computer Sciences               |
+ *********************************************************************************
+ |                        Bachelor in Computer Science                           |
+ |                                 2022/1                                        |
+ |                      SCC0215 - Archives Organization                          |
+ |                                                                               |
+ |Authors: Gustavo Sampaio Lima (12623992) and Thierry de Souza Araujo (12681094)|
+ *********************************************************************************
+  > "Primeiro Trabalho Pratico"
+  > Objective: Code that can store and retrieve data related
+    related to the vehicle fleet list in Brazil, which is maintained by Denatran. 
+    The files can have fixed or variable sizes
+ ********************************************************************************/
+
 /* 
-    ERRO -> RETORNA -2
-    DADO INEXISTENTE -> RETORNA -1
+    ERROR -> RETURNS -2
+    INEXISTENT DATA -> RETURNS -1
 */
 #include<stdio.h>
 #include<string.h>
@@ -10,10 +26,8 @@
 
 int main(){
 
-    //vai armazenar a opcao selecionada
     int option;
-    // vai armazenar o retorno das funcoes
-    int res;
+    int res;           // function return
     char name_csv[20];
     char type_file[6];
     char name_bin[20];
@@ -74,14 +88,14 @@ int main(){
             read_word(name_bin, stdin);
             bin_file = fopen(name_bin, "rb");
 
-            //quantidade de campos buscados
+            //number of searched fields
             int n;
             scanf("%d", &n);
 
-            //array que vai conter os campos e valores a serem buscados
+            //array that will contain the fields and values to be searched
             char** array = create_array_fields_sfw(n);
             
-            //{(campo_i, valor_i), ...}
+            //{(field_i, value_i), ...}
             for (int i = 0; i < n*2; i++){
                 read_word(array[i], stdin);
                 scan_quote_strings(array[++i]);
@@ -105,7 +119,7 @@ int main(){
             if(bin_file != NULL) fclose(bin_file);
             break;
 
-        case 4:     //busca por RRN 
+        case 4:     //search by RRN 
             read_word(type_file, stdin);
             read_word(name_bin, stdin);
             int rrn; scanf("%d", &rrn);

@@ -1,28 +1,28 @@
-/* Retorna 1 se ha uma palavra, 0 se nao ha ou -1 se houve erro */
+/* Returns 1 if there is a word, 0 if there isn't, or -1 if there was an error */
 int check_field(FILE* file);
 
-/* Le um valor inteiro em file e remove a ',' apos o campo 
-    Retorna 1 se ocorreu tudo correto
-            0 se o campo eh vazio
-           -1 se houve erro na leitura                  */
+/* Reads an integer value from file and removes ',' after the field 
+    Returns 1 if everything was correct
+            0 if the field is empty
+            -1 if there was an error in the reading   */
 int read_int_field(FILE* file, int* value);
 
-/*  Remove o header do arquivo csv */
+/*  Removes the header from the csv file  */
 int remove_header(FILE* file_csv);
 
-/*  Le um campo de string do arquivo csv
-    Retorna 1 se ocorreu tudo correto
-            0 se o campo eh vazio
-           -1 se houve erro na leitura  */
+/*  Read a string field from csv file
+    Returns 1 if everything was correct
+            0 if the field is empty
+            -1 if there was an error in the reading   */
 int read_char_field(char* string, FILE* file_csv);
 
-/*  Le um campo de file e atribui a variavel string
-    Retorna 1 se ha valor
-           -1 se eh um campo vazio               */
+/*  Reads a file field and assigns it to a string variable
+    Returns 1 if there is a value
+           -1 if it is an empty field   */
 int read_word(char* string, FILE* file_csv);
 
-/*  Le uma string da entrada padrao que esteja cercada por
-    aspas duplas, as removendo                          */
+/*  Read a string from the standard input that is surrounded by
+    double quotes, removing them   */
 void scan_quote_strings(char* string);
 
 char** create_array_fields_sfw(int n);

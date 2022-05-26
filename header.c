@@ -8,7 +8,7 @@ HEADER* create_header(){
     HEADER* header = malloc(sizeof(HEADER));
 
     header->status = '0';
-    strcpy(header->descricao, "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL");
+    strcpy(header->description, "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL");
     strcpy(header->desC1, "CODIGO IDENTIFICADOR: ");
     strcpy(header->desC2, "ANO DE FABRICACAO: ");
     strcpy(header->desC3, "QUANTIDADE DE VEICULOS: ");
@@ -36,7 +36,7 @@ int write_header(HEADER* h, FILE* bin_file, int type_file){
     if(bin_file == NULL)    
         return -2;
 
-    //valores para serem salvos como padrao
+    //values to be saved as default
     int i = 0, ni = -1; 
     long int li = 0, nli = -1;
     
@@ -47,7 +47,7 @@ int write_header(HEADER* h, FILE* bin_file, int type_file){
     else if(type_file == 2)
         fwrite(&nli, 1, sizeof(long int), bin_file);                   
     
-    fwrite(h->descricao, 40, sizeof(char), bin_file);                           
+    fwrite(h->description, 40, sizeof(char), bin_file);                           
     fwrite(h->desC1, 22, sizeof(char), bin_file);
     fwrite(h->desC2, 19, sizeof(char), bin_file);
     fwrite(h->desC3, 24, sizeof(char), bin_file); 
@@ -69,7 +69,7 @@ int write_header(HEADER* h, FILE* bin_file, int type_file){
     return 1;                          
 }
 
-int atualiza_status(HEADER* h, FILE* bin_file){
+int update_status(HEADER* h, FILE* bin_file){
     if(h == NULL || bin_file == NULL)
         return -2;
 
@@ -84,7 +84,7 @@ int atualiza_status(HEADER* h, FILE* bin_file){
     return 1;
 }
 
-int verifica_status(FILE* bin_file){
+int check_status(FILE* bin_file){
     HEADER header;
     
     fread(&header.status, 1, sizeof(char), bin_file);

@@ -13,7 +13,7 @@ int remove_header(FILE* file_csv){
 
 int check_field(FILE* file){
     char c = fgetc(file);
-    //verifica se o campo eh nulo
+    //checks if the field is null
     if(c == ',' || c == '\n' || c == '\r' || c == EOF) 
         return -1;
     else{
@@ -28,7 +28,7 @@ int read_int_field(FILE* file, int* value){
     
     fscanf(file, "%d", value);
     
-    //remove a ','
+    //remove ','
     char c; fscanf(file, "%c", &c);
     return 1;
 }
@@ -62,7 +62,7 @@ int read_word(char* string, FILE* file){
     if(c == 0)
         return 1;
 
-    //remove os caracteres desnecessarios antes da palavra
+    //removes unnecessary characters before the word
     while(c == '\n' || c == '\r' || c == ' ')
         c = fgetc(file);
     
@@ -81,7 +81,7 @@ void scan_quote_strings(char* string){
     int i = 0;
 
     c = getchar();   
-    //remove os caracteres desnecessarios antes da palavra
+    //removes unnecessary characters before the word
     while(c == '\n' || c == '\r' || c == '"')
         c = getchar();
     
@@ -92,14 +92,13 @@ void scan_quote_strings(char* string){
     }while(c != '\n' && c != '\r' && c != '"' && c != EOF);
 
     string[i]  = '\0';
-    //return 1;
 }
 
 char** create_array_fields_sfw(int n){
     if(n == 0)
         return NULL;
 
-    //vetor = [(campo1, valor1), ..., (campo_n, valor_n)]
+    //vector = [(field1, value1), ..., (field_n, value_n)]
     char** array = malloc(n*2 * sizeof(char*));
 
     for(int i = 0; i < n*2; i++)
