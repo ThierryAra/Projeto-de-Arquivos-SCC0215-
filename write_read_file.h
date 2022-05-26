@@ -2,8 +2,8 @@
 int check_field(FILE* file);
 
 /* Reads an integer value from file and removes ',' after the field 
-    Returns 1 if everything was correct
-            0 if the field is empty
+    Returns  1 if everything was correct
+             0 if the field is empty
             -1 if there was an error in the reading   */
 int read_int_field(FILE* file, int* value);
 
@@ -11,8 +11,8 @@ int read_int_field(FILE* file, int* value);
 int remove_header(FILE* file_csv);
 
 /*  Read a string field from csv file
-    Returns 1 if everything was correct
-            0 if the field is empty
+    Returns  1 if everything was correct
+             0 if the field is empty
             -1 if there was an error in the reading   */
 int read_char_field(char* string, FILE* file_csv);
 

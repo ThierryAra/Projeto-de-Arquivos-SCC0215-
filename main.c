@@ -47,10 +47,12 @@ int main(){
 
             if(strcmp(type_file, "tipo1") == 0){
                 res = create_table(csv_file, bin_file, 1);
+                
                 if(res < 1)
                     printf("Falha no processamento do arquivo.");
             }else if(strcmp(type_file, "tipo2") == 0){
                 res = create_table(csv_file, bin_file, 2);
+                
                 if(res < 1)
                     printf("Falha no processamento do arquivo.");
             }else    
@@ -71,10 +73,12 @@ int main(){
             res = 0;
             if(strcmp(type_file, "tipo1") == 0){
                 res = select_from(bin_file, 1);
+                
                 if(res == -2)
                     printf("Falha no processamento do arquivo.");
             }else if(strcmp(type_file, "tipo2") == 0){
                 res = select_from(bin_file, 2);
+                
                 if(res == -2)
                     printf("Falha no processamento do arquivo.");
             }else    

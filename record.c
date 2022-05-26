@@ -86,7 +86,7 @@ int create_table(FILE* csv_file, FILE* bin_file, int type_file){
         }
     }
 
-    // Changes these fields: 'nextRRN' ou 'nextByteOffset'
+    // Changes these fields: 'nextRRN' or 'nextByteOffset'
     if(type_file == 1){
         fseek(bin_file, 0, SEEK_END);
         int BOS = (ftell(bin_file) - STATIC_REC_HEADER) / STATIC_REC_SIZE;
@@ -137,14 +137,15 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file){
     if(bin_file == NULL || fields == NULL)
         return -2;
 
+
     //checks if the file is inconsistent
     int status = check_status(bin_file);
     if(status == 0 || status == -1)
         return -2;
-
+    
     //record that will be compared
-    RECORD* r = create_record();
     HEADER* header = create_header();
+    RECORD* r = create_record();
 
     if(type_file == 1) fseek(bin_file, STATIC_REC_HEADER, SEEK_SET);
     else               fseek(bin_file, VARIABLE_REC_HEADER, SEEK_SET);
@@ -162,45 +163,45 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file){
         if(record_size == -1) // excluded register
             error = -1;
         
-        //holds as long as the array fields are equal to r
+         //holds as long as the array fields are equal to r
         while (error > 0 && i < n*2){
             if(strcmp(fields[i], "id") == 0){
                 int x = atoi(fields[i + 1]);
                 if(x != r->id){
                     error = -1;
                 }
-            }else if(strcmp(fields[i], "year") == 0){
+            }else if(strcmp(fields[i], "ano") == 0){
                 int x = atoi(fields[i + 1]);
                 if(x != r->year){
                     error = -1;
                 }
-            }else if(strcmp(fields[i], "amount") == 0){
+            }else if(strcmp(fields[i], "qtt") == 0){
                 int x = atoi(fields[i + 1]);
                 if(x != r->amount){
                     error = -1;
                 }
-            }else if(strcmp(fields[i], "abbreviation") == 0){
+            }else if(strcmp(fields[i], "sigla") == 0){
                 if( fields[i+1][0] != r->abbreviation[0] || 
                     fields[i+1][1] != r->abbreviation[1] ){
                     
                     error = -1;
                 }
-            }else if(strcmp(fields[i], "city") == 0){
+            }else if(strcmp(fields[i], "cidade") == 0){
                 if(r->city_size <= 0 || strcmp(fields[i+1], r->city) != 0){
                     error = -1;
                 }
-            }else if(strcmp(fields[i], "brand") == 0){
+            }else if(strcmp(fields[i], "marca") == 0){
                  if(r->brand_size <= 0 || strcmp(fields[i+1], r->brand) != 0){
                     error = -1;
                 }
-            }else if(strcmp(fields[i], "model") == 0){
+            }else if(strcmp(fields[i], "modelo") == 0){
                  if(r->model_size <= 0 || strcmp(fields[i+1], r->model) != 0){
                     error = -1;
                 }
             }else
                 error = -1;
 
-            //next field on 'fields' 
+             //next field on 'fields' 
             i += 2;
         }
 
@@ -510,7 +511,7 @@ int print_record(RECORD* r){
     return 1;
 }
 
-/*  Remove o lixo de cada registro */
+/*  Removes garbage from each record */
 void next_register(FILE* bin_file, int quantity, int type_file){
     if(type_file == 1)
         fseek(bin_file, STATIC_REC_SIZE-1, SEEK_CUR);
