@@ -2,7 +2,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include"header.h"
-
+#include"record.h"
 
 HEADER* create_header(){
     HEADER* header = malloc(sizeof(HEADER));
@@ -69,19 +69,26 @@ int write_header(HEADER* h, FILE* bin_file, int type_file){
     return 1;                          
 }
 
-int update_status(HEADER* h, FILE* bin_file){
-    if(h == NULL || bin_file == NULL)
-        return -2;
+char update_status(FILE* bin_file){
+    if(bin_file == NULL)
+        return 0;
 
-    if(h->status == '0'){
+    char status = 0;
+    
+    fseek(bin_file, 0, SEEK_SET);
+    fread(&status, 1, sizeof(char), bin_file);
+    
+    if(status == '0'){
         fseek(bin_file, 0, SEEK_SET);
         fwrite("1", 1, sizeof(char), bin_file);
+        status = '1';
     }else{
         fseek(bin_file, 0, SEEK_SET);
         fwrite("0", 1, sizeof(char), bin_file);
+        status = '0';
     }
 
-    return 1;
+    return status;
 }
 
 int check_status(FILE* bin_file){

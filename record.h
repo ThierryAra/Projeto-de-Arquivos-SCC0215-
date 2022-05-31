@@ -37,3 +37,8 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file);
 int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r);
 
 int print_record(RECORD* r);
+
+//-------------------------TRABALHO 2-------------------------------//
+int create_index_id(FILE* bin_file, FILE* index_file, int type_file);
+
+int print_index_file(FILE* bin_file, FILE* index_file, int type_file);

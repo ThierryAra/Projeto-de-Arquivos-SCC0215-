@@ -1,7 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include"useful.h"
 
-int remove_header(FILE* file_csv){
+int remove_header_csv(FILE* file_csv){
     char c;
 
     do{

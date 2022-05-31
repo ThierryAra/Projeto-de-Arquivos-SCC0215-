@@ -37,9 +37,9 @@ int write_header(HEADER* h, FILE* bin_file, int type_file);
 /*  If header status is 1 updates the file to status 0
     and vice versa
     Returns:
-             1 if run correctly
-            -2 if any parameter is null */                  
-int update_status(HEADER* h, FILE* bin_file);
+            '1'/'0' if run correctly
+            0 if parameter is null */                  
+char update_status(FILE* bin_file);
 
 /*  Checks your archive status
     Returns:
@@ -47,3 +47,5 @@ int update_status(HEADER* h, FILE* bin_file);
              0 = inconsistent file    
             -1 = pointer is at the wrong position */
 int check_status(FILE* bin_file);
+
+int ignore_header(HEADER* header, FILE* bin_file, int type_file);

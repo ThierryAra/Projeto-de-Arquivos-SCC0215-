@@ -21,7 +21,7 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
-#include"write_read_file.h"
+#include"useful.h"
 #include"record.h"
 
 int main(){
@@ -42,7 +42,7 @@ int main(){
             read_word(name_bin, stdin);
 
             FILE* csv_file = fopen(name_csv, "r");
-            remove_header(csv_file);
+            remove_header_csv(csv_file);
             bin_file = fopen(name_bin, "wb+");
 
             if(strcmp(type_file, "tipo1") == 0){
