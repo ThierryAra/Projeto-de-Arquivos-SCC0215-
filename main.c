@@ -23,6 +23,7 @@
 #include<stdlib.h>
 #include"useful.h"
 #include"record.h"
+#include"index.h"
 
 int main(){
 
@@ -30,7 +31,7 @@ int main(){
     int res;           // function return
     char name_csv[20];
     char type_file[6];
-    char name_bin[20];
+    char name_bin[200];
     FILE* bin_file;
 
     scanf("%d", &option);
@@ -84,7 +85,6 @@ int main(){
             }else    
                 printf("Falha no processamento do arquivo.");
 
-            if(bin_file != NULL) fclose(bin_file);
             break;
 
         case 3:;     // SELECT .. FROM .. WHERE
@@ -120,7 +120,6 @@ int main(){
                 printf("Registro inexistente.");
 
             free_array_fields_sfw(array, n);
-            if(bin_file != NULL) fclose(bin_file);
             break;
 
         case 4:     //search by RRN 
@@ -129,7 +128,7 @@ int main(){
             int rrn; scanf("%d", &rrn);
 
             RECORD* r1 = create_record();
-            FILE* bin_file = fopen(name_bin, "rb");
+            bin_file = fopen(name_bin, "rb");
             
             res = search_rrn(type_file, bin_file, rrn, r1);
             if(res == -2)
@@ -139,10 +138,40 @@ int main(){
             else
                 print_record(r1);
 
-            free_rec(r1);
-            if(bin_file != NULL) fclose(bin_file);  
+            free_rec(r1);  
             break;
+        case 5: ;
+            char name_index_bin[20];
+
+            read_word(type_file, stdin);
+            read_word(name_bin, stdin);
+            read_word(name_index_bin, stdin);
+            
+            bin_file = fopen(name_bin, "rb");
+            FILE* bin_index_file = fopen(name_index_bin, "w+b");
+
+             if(strcmp(type_file, "tipo1") == 0){
+                res = create_index_id(bin_file, bin_index_file, 1);            
+            }else if(strcmp(type_file, "tipo2") == 0){
+                res = create_index_id(bin_file, bin_index_file, 2);
+            }else    
+                printf("Falha no processamento do arquivo.");
+
+            if(res < 0)
+                printf("Falha no processamento do arquivo."); 
+            else{
+                fclose(bin_index_file);
+                bin_index_file = NULL;
+
+                binarioNaTela(name_index_bin);
+            }
+
+            if(bin_index_file != NULL) fclose(bin_index_file);  
+            break;            
     }
 
+    if(bin_file == NULL)
+        printf("ARQUIVO NULL");
+    if(bin_file != NULL) fclose(bin_file);  
     return 0;
 }

@@ -1,1 +1,7 @@
-4 tipo1 binario16.bin 1000
+8 tipo2 binario16.bin indice16.bin 3
+1 id 809
+1 cidade "SANTA TEREZINHA DO ITAIPU"
+1 sigla NULO
+1 cidade NULO
+1 ano 1996
+2 ano 1997 qtt 14

@@ -1,5 +1,5 @@
-objects = main.c record.c useful.c header.c
-headers = record.h useful.h header.h
+objects = main.c record.c useful.c header.c index.c
+headers = record.h useful.h header.h index.h
 executable = run
 
 all:

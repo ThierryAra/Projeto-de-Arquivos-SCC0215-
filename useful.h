@@ -8,7 +8,7 @@ int check_field(FILE* file);
 int read_int_field(FILE* file, int* value);
 
 /*  Removes the header from the csv file  */
-int remove_header(FILE* file_csv);
+int remove_header_csv(FILE* file_csv);
 
 /*  Read a string field from csv file
     Returns  1 if everything was correct

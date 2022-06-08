@@ -1,3 +1,8 @@
+#define STATIC_REC_SIZE 97       
+#define STATIC_REC_HEADER 182 
+#define VARIABLE_REC_HEADER 190 
+#define STR_SIZE 30  
+
 typedef struct record RECORD;
 
 /*  Allocate space for a record */
@@ -39,6 +44,4 @@ int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r);
 int print_record(RECORD* r);
 
 //-------------------------TRABALHO 2-------------------------------//
-int create_index_id(FILE* bin_file, FILE* index_file, int type_file);
-
-int print_index_file(FILE* bin_file, FILE* index_file, int type_file);
+int next_register(FILE* bin_file, int type_file);
