@@ -26,6 +26,7 @@ int read_word(char* string, FILE* file_csv);
 void scan_quote_strings(char* string);
 
 char** create_array_fields_sfw(int n);
+char** read_search_fields(int n, int* is_there_id);
 
 int free_array_fields_sfw(char** array, int n);
 

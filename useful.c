@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 #include"useful.h"
 
 int remove_header_csv(FILE* file_csv){
@@ -108,6 +109,20 @@ char** create_array_fields_sfw(int n){
     return array;
 }
 
+char** read_search_fields(int n, int* is_there_id){
+    char** array = create_array_fields_sfw(n);
+            
+    //{(campo_i, valor_i), ...}
+    for (int i = 0; i < n*2; i++){
+        read_word(array[i], stdin);
+        if(strcmp(array[i], "id") == 0)
+            *is_there_id = i;
+        scan_quote_strings(array[++i]);
+    }
+
+    return array;
+}
+
 int free_array_fields_sfw(char** array, int n){
     if(array == NULL || n <= 0)
         return -1;
@@ -146,3 +161,4 @@ void binarioNaTela(char *nomeArquivoBinario) { /* Você não precisa entender o 
 	free(mb);
 	fclose(fs);
 }
+

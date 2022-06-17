@@ -28,17 +28,20 @@
 int main(){
 
     int option;
-    int res;           // function return
+    int res = 1;           // function return
     char name_csv[20];
     char type_file[6];
     char name_bin[200];
-    FILE* bin_file;
+    FILE* bin_file = NULL;
+
+    char name_index_bin[20];
+    FILE* bin_index_file = NULL;
 
     scanf("%d", &option);
+    read_word(type_file, stdin);
 
     switch (option){
         case 1:      // CREATE TABLE
-            read_word(type_file, stdin);
             read_word(name_csv, stdin); 
             read_word(name_bin, stdin);
 
@@ -48,14 +51,8 @@ int main(){
 
             if(strcmp(type_file, "tipo1") == 0){
                 res = create_table(csv_file, bin_file, 1);
-                
-                if(res < 1)
-                    printf("Falha no processamento do arquivo.");
             }else if(strcmp(type_file, "tipo2") == 0){
                 res = create_table(csv_file, bin_file, 2);
-                
-                if(res < 1)
-                    printf("Falha no processamento do arquivo.");
             }else    
                 printf("Falha no processamento do arquivo.");
             
@@ -63,50 +60,40 @@ int main(){
                 fclose(bin_file);
                 binarioNaTela(name_bin);
             }
+
+            if(res < 1)
+                printf("Falha no processamento do arquivo.");
+
             if(csv_file != NULL) fclose(csv_file);  
             break;
 
         case 2:     // SELECT .. FROM
-            read_word(type_file, stdin);
             read_word(name_bin, stdin);
             bin_file = fopen(name_bin, "rb");
 
-            res = 0;
             if(strcmp(type_file, "tipo1") == 0){
                 res = select_from(bin_file, 1);
-                
-                if(res == -2)
-                    printf("Falha no processamento do arquivo.");
             }else if(strcmp(type_file, "tipo2") == 0){
                 res = select_from(bin_file, 2);
-                
-                if(res == -2)
-                    printf("Falha no processamento do arquivo.");
             }else    
                 printf("Falha no processamento do arquivo.");
 
+            if(res == -2)
+                printf("Falha no processamento do arquivo.");
+            
             break;
 
         case 3:;     // SELECT .. FROM .. WHERE
-            read_word(type_file, stdin);
             read_word(name_bin, stdin);
             bin_file = fopen(name_bin, "rb");
 
             //number of searched fields
-            int n;
+            int n, id_trash;
             scanf("%d", &n);
 
             //array that will contain the fields and values to be searched
-            char** array = create_array_fields_sfw(n);
+            char** array = read_search_fields(n, &id_trash);
             
-            //{(field_i, value_i), ...}
-            for (int i = 0; i < n*2; i++){
-                read_word(array[i], stdin);
-                scan_quote_strings(array[++i]);
-            }
-            
-            res = 1;
-
             if(strcmp(type_file, "tipo1") == 0){
                 res = select_from_where(bin_file, array, n, 1);                
             }else if(strcmp(type_file, "tipo2") == 0){
@@ -123,7 +110,6 @@ int main(){
             break;
 
         case 4:     //search by RRN 
-            read_word(type_file, stdin);
             read_word(name_bin, stdin);
             int rrn; scanf("%d", &rrn);
 
@@ -141,14 +127,11 @@ int main(){
             free_rec(r1);  
             break;
         case 5: ;
-            char name_index_bin[20];
-
-            read_word(type_file, stdin);
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
             
             bin_file = fopen(name_bin, "rb");
-            FILE* bin_index_file = fopen(name_index_bin, "w+b");
+            bin_index_file = fopen(name_index_bin, "w+b");
 
              if(strcmp(type_file, "tipo1") == 0){
                 res = create_index_id(bin_file, bin_index_file, 1);            
@@ -160,18 +143,25 @@ int main(){
             if(res < 0)
                 printf("Falha no processamento do arquivo."); 
             else{
+                //print_index_file(bin_index_file, 2);
                 fclose(bin_index_file);
                 bin_index_file = NULL;
 
                 binarioNaTela(name_index_bin);
             }
 
-            if(bin_index_file != NULL) fclose(bin_index_file);  
-            break;            
+            break;  
+        
+        case 6:          
+            read_word(name_bin, stdin);
+            read_word(name_index_bin, stdin);
+            
+            bin_file = fopen(name_bin, "w+b");
+            bin_index_file = fopen(name_index_bin, "w+b");
+            break;
+        
     }
 
-    if(bin_file == NULL)
-        printf("ARQUIVO NULL");
     if(bin_file != NULL) fclose(bin_file);  
     return 0;
 }

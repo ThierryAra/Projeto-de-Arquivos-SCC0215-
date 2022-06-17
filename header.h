@@ -37,7 +37,7 @@ int write_header(HEADER* h, FILE* bin_file, int type_file);
 /*  If header status is 1 updates the file to status 0
     and vice versa
     Returns:
-            '1'/'0' if run correctly
+            1 if run correctly
             0 if parameter is null */                  
 char update_status(FILE* bin_file);
 

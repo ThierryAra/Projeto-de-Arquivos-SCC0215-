@@ -41,7 +41,9 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file);
         -2 if any parameter is null/corrupted file          */
 int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r);
 
+
 int print_record(RECORD* r);
 
 //-------------------------TRABALHO 2-------------------------------//
 int next_register(FILE* bin_file, int type_file);
+

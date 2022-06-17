@@ -7,6 +7,7 @@
 #include"index.h"
 
 int read_item_csv(FILE* csv_file, RECORD* r);
+void jump_header(FILE* file, int type_file);
 
 /*  Reads one record from the binary file passed as parameter and 
     stores it in r
@@ -22,7 +23,15 @@ int next_register(FILE* bin_file, int type_file);
 /*  Write a record (r) to the .bin file 
     Returns 1 if there is no error
            -1 if the parameters are corrupted */
-int write_item(FILE* bin_file, RECORD* r, HEADER* header, int type_file, int record_size);
+int write_item(FILE* bin_file, RECORD* r, HEADER* header, 
+                int type_file, int record_size);
+
+/*  Soma o campos de tamanho variavel ao tamanho do registro */
+int sum_vars(RECORD* r, int initial_sum);
+
+/*  Realiza uma busca parametrizada em bin_file */
+RECORD* parameterized_search(FILE* bin_file, HEADER* header, RECORD* r,
+                            char** fields, int n, int type_file);
 
 struct record{
     char removed;
@@ -55,17 +64,6 @@ void free_rec(RECORD* r){
     free(r->brand);
     free(r->model);
     free(r);
-}
-
-int sum_vars(RECORD* r, int initial_sum){
-    if(r->city_size > 0)
-        initial_sum += 5 + r->city_size;
-    if(r->model_size > 0)
-        initial_sum += 5 + r->model_size;
-    if(r->brand_size > 0)
-        initial_sum += 5 + r->brand_size;
-
-    return initial_sum;
 }
 
 int create_table(FILE* csv_file, FILE* bin_file, int type_file){
@@ -127,8 +125,7 @@ int select_from(FILE* bin_file, int type_file){
     HEADER* header = create_header();
 
     //jump the header
-    if(type_file == 1) fseek(bin_file, STATIC_REC_HEADER, SEEK_SET);
-    else               fseek(bin_file, VARIABLE_REC_HEADER, SEEK_SET);
+    jump_header(bin_file, type_file);
 
     int record_size = 0;
     int i = 0;
@@ -145,21 +142,53 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file){
     if(bin_file == NULL || fields == NULL)
         return -2;
 
-
     //checks if the file is inconsistent
     int status = check_status(bin_file);
     if(status == 0 || status == -1)
         return -2;
+        
+    jump_header(bin_file, type_file);
     
     //record that will be compared
-    HEADER* header = create_header();
     RECORD* r = create_record();
-
-    if(type_file == 1) fseek(bin_file, STATIC_REC_HEADER, SEEK_SET);
-    else               fseek(bin_file, VARIABLE_REC_HEADER, SEEK_SET);
+    HEADER* header = create_header();
     
-    //will store how many searched records were found
-    int found = 0;
+    while(parameterized_search(bin_file, header, r, fields, n, type_file) != NULL)
+        print_record(r);
+
+    free_header(header);
+    free_rec(r);
+}
+
+int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r){
+    if(bin_file == NULL || strcmp(type_file, "tipo1") != 0)
+        return -2;
+    
+    //check if it is an existing RRN
+    fseek(bin_file, 174, SEEK_SET);
+    int x = 0;
+    fread(&x, 1, sizeof(int), bin_file);
+    if(rrn >= x)
+        return -1;
+    
+    //sends the pointer to the register
+    fseek(bin_file, (rrn*STATIC_REC_SIZE)+STATIC_REC_HEADER, SEEK_SET);
+    HEADER* header = create_header();
+
+    if(get_record(bin_file, r, header, 1) < 1)
+        return -1;
+
+    free_header(header);
+    return 1;
+}
+
+RECORD* parameterized_search(
+    FILE* bin_file, 
+    HEADER* header,
+    RECORD* r,
+    char** fields, 
+    int n, int type_file
+){
     //checks whether the record was removed and contains the size of the record read
     int record_size = 0;
     //checks if the record has the same fields/values as the searched record
@@ -209,46 +238,20 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file){
             }else
                 error = -1;
 
-             //next field on 'fields' 
+            //next field on 'fields' 
             i += 2;
         }
 
         //checks if it is really the record you are looking for
-        if(error > 0){
-            print_record(r);
-            found++;
-        }
-
+        if(error > 0)
+            return r;
+        
         //reset error for a next search
         error = 1;
         i = 0;
     }
 
-    free_header(header);
-    free_rec(r);
-    return found;
-}
-
-int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r){
-    if(bin_file == NULL || strcmp(type_file, "tipo1") != 0)
-        return -2;
-    
-    //check if it is an existing RRN
-    fseek(bin_file, 174, SEEK_SET);
-    int x = 0;
-    fread(&x, 1, sizeof(int), bin_file);
-    if(rrn >= x)
-        return -1;
-    
-    //sends the pointer to the register
-    fseek(bin_file, (rrn*STATIC_REC_SIZE)+STATIC_REC_HEADER, SEEK_SET);
-    HEADER* header = create_header();
-
-    if(get_record(bin_file, r, header, 1) < 1)
-        return -1;
-
-    free_header(header);
-    return 1;
+    return NULL;
 }
 
 int read_item_csv(FILE* csv_file, RECORD* r){
@@ -342,9 +345,8 @@ int write_item(FILE* bin_file, RECORD* r, HEADER* header, int type_file, int rec
     return 1;
 }
 
-/*  Read and add a field of varying size ah struct r
-    Returns: sum of the fields read
-            -1 if the read field code does not exist in the file */
+/*  Read and add a field of varying size on struct r
+    Returns: sum of the fields read               */
 int add_str_field(FILE* bin_file, RECORD* r, HEADER* header){
     int string_size = 0;
     fread(&string_size, 1, sizeof(int), bin_file);
@@ -374,51 +376,25 @@ int add_str_field(FILE* bin_file, RECORD* r, HEADER* header){
 int read_fields_t1(FILE* bin_file, HEADER* header, RECORD* r, int* record_size){
     char c = 0;
 
-    //checks if there are more fields
-    fread(&c, 1, sizeof(char), bin_file);
-    if(c == '$') return (++(*record_size)); //+1 from fread(&c)    
-    else ungetc(c, bin_file);
-    *record_size += add_str_field(bin_file, r, header);
+    for (int i = 0; i < 3; i++){
+        //checks if there are more fields
+        fread(&c, 1, sizeof(char), bin_file);
+        if(c == '$') return (++(*record_size)); //+1 from fread(&c)  
+        else ungetc(c, bin_file);
+        *record_size += add_str_field(bin_file, r, header);
 
-    if(*record_size == STATIC_REC_SIZE) return STATIC_REC_SIZE;
-    
-    //checks if there are more fields
-    fread(&c, 1, sizeof(char), bin_file);
-    if(c == '$') return (++(*record_size)); //+1 from fread(&c)    
-    else ungetc(c, bin_file);
-
-    *record_size += add_str_field(bin_file, r, header);
-    if(*record_size == STATIC_REC_SIZE) return STATIC_REC_SIZE;
-    
-    //checks if there are more fields
-    fread(&c, 1, sizeof(char), bin_file);
-    if(c == '$') return (++(*record_size)); //+1 from fread(&c)    
-    else ungetc(c, bin_file);
-
-    *record_size += add_str_field(bin_file, r, header);
+        if(*record_size == STATIC_REC_SIZE) return STATIC_REC_SIZE;
+    }
 }
 
 int read_fields_t2(FILE* bin_file, HEADER* header, RECORD* r, int* bytes_scanned, int record_size){
-    //checks if there are more fields
-    if(*bytes_scanned == record_size){
-        return record_size;
+    for (int i = 0; i < 3; i++){
+        //checks if there are more fields
+        if(*bytes_scanned == record_size)
+            return record_size;
+
+        *bytes_scanned += add_str_field(bin_file, r, header);
     }
-    
-    *bytes_scanned += add_str_field(bin_file, r, header);
-
-    //checks if there are more fields
-    if(*bytes_scanned == record_size){
-        return record_size;
-    }
-
-    *bytes_scanned += add_str_field(bin_file, r, header);
-
-    //checks if there are more fields
-    if(*bytes_scanned == record_size){
-        return record_size;
-    }
-
-    *bytes_scanned += add_str_field(bin_file, r, header);
 
     return record_size;
 }
@@ -511,6 +487,21 @@ int print_record(RECORD* r){
     return 1;
 }
 
+int sum_vars(RECORD* r, int initial_sum){
+    if(r->city_size > 0)
+        initial_sum += 5 + r->city_size;
+    if(r->model_size > 0)
+        initial_sum += 5 + r->model_size;
+    if(r->brand_size > 0)
+        initial_sum += 5 + r->brand_size;
+
+    return initial_sum;
+}
+
+void jump_header(FILE* file, int type_file){
+    if(type_file == 1) fseek(file, STATIC_REC_HEADER, SEEK_SET);
+    else               fseek(file, VARIABLE_REC_HEADER, SEEK_SET);
+}
 /* void next_register(FILE* bin_file, int quantity, int type_file){
     if(type_file == 1)
         fseek(bin_file, STATIC_REC_SIZE-1, SEEK_CUR);
@@ -520,21 +511,6 @@ int print_record(RECORD* r){
 } */
 
 /* --------------------------TRABALHO 2-------------------------------- */
-
-char** read_search_fields(int n, int* is_there_id){
-    char** array = create_array_fields_sfw(n);
-            
-    //{(campo_i, valor_i), ...}
-    for (int i = 0; i < n*2; i++){
-        read_word(array[i], stdin);
-        if(strcmp(array[i], "id") == 0)
-            *is_there_id = i;
-        scan_quote_strings(array[++i]);
-    }
-
-    return array;
-}
-
 int next_register(FILE* bin_file, int type_file){
     if(type_file == 1) 
         fseek(bin_file, STATIC_REC_SIZE-1, SEEK_CUR);
@@ -542,12 +518,18 @@ int next_register(FILE* bin_file, int type_file){
         int size_rec = 0;
         fread(&size_rec, 1, sizeof(int), bin_file);
         fseek(bin_file, size_rec, SEEK_CUR);
-    }               
+        return size_rec + 5;           
+    }    
+
+    return 1;
 }
 
-
-
-int delete_record(FILE* bin_file, int id, int rrn, int* id_indexes, int id_indexes_size){
+int delete_record(
+    FILE* bin_file, 
+    int id, int rrn, 
+    int* id_indexes, 
+    int id_indexes_size
+){
     if(id_indexes == NULL)
         return -2;
 

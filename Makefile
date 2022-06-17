@@ -9,7 +9,7 @@ run: all
 	./$(executable)
 
 valgrind: all
-	valgrind --leak-check=full ./$(executable)
+	valgrind --leak-check=full --track-origins=yes ./$(executable)
 
 zip:
 	zip thierry.zip $(objects) $(headers) $(bin) Makefile 
