@@ -6,16 +6,13 @@
 #include"index.h"
 
 INDEX* read_data_file(FILE* bin_file, int* id_indexes_size, int type_file);
+int qsort_compare(const void* a, const  void* b);
 
 struct index{
     int id;
     int rrn;
     long int BOS;
 };
-
-int qsort_compare(const void* a, const  void* b){
-    return ((INDEX*)a)->id - ((INDEX*)b)->id;
-}
 
 int create_index_id(FILE* bin_file, FILE* index_file, int type_file){
     if(bin_file == NULL || index_file == NULL)
@@ -159,7 +156,7 @@ int print_index_file(FILE* index_file, int type_file){
     fclose(index_file);
 }
 
-void* read_index_file(
+INDEX* read_index_file(
     FILE* bin_file, FILE* index_file, 
     int* id_indexes_size,     
     int type_file
@@ -171,58 +168,48 @@ void* read_index_file(
     if(status == 0)
         return NULL;
 
-    int id = 0;
-    
-    if(type_file == 1){     
-        //Busca o maior RRN para ter o tamanho da matriz de indices
-        fseek(bin_file, 174, SEEK_SET);
-        fread(id_indexes_size, 1, sizeof(int), bin_file);
-        //Alocando espaco para a matriz 
-        int* id_indexes = malloc(sizeof(int)*(*id_indexes_size*2));
+    int id = 0, size = 1100, i = 0;
+    INDEX* id_indexes = malloc(sizeof(INDEX)*size);
 
-        char status = '0';
+    if(type_file == 1){     
         int rrn = 0;
 
-        int i = 0;
         while(fread(&id, 1, sizeof(int), index_file) != 0){
             fread(&rrn, 1, sizeof(int), index_file);
-            id_indexes[i] = id;
-            id_indexes[i+1] = rrn;
-            i += 2;
-        }
+            id_indexes[i].id  = id;
+            id_indexes[i].rrn = rrn;
+            i++;
 
-        return id_indexes;
+            if(i >= size){
+                //como os arquivos nao constumam ter + de 1000 registros
+                //o aumento ocorre gradativamente
+                size += size + size/5;
+                id_indexes = realloc(id_indexes, sizeof(INDEX)*size);
+            }
+        }
     }else if(type_file == 2){
-        long int final_BOS = 0;
-        
-        fseek(bin_file, 178, SEEK_SET);
-        fread(&final_BOS, 1, sizeof(long int), bin_file);
-        //Alocando espaco para a matriz (tamanho inicial medio)
-        int size = 2000;
-        long int* id_indexes = malloc(sizeof(long int)*(size));
+        id_indexes = malloc(sizeof(INDEX)*(size));
 
         long int BOS = 0;
-        int i = 0;
 
         while(fread(&id, 1, sizeof(int), index_file) != 0){
             fread(&BOS, 1, sizeof(int), index_file);
-            id_indexes[i] = id;
-            id_indexes[i+1] = BOS;
-            i += 2;
+            id_indexes[i].id  = id;
+            id_indexes[i].BOS = BOS;
+            i++;
 
-            if(i == size){
+            if(i >= size){
                 //como os arquivos nao constumam ter + de 1000 registros
                 //o aumento ocorre gradativamente
-                size += 1000 + size/5;
-                id_indexes = realloc(id_indexes, sizeof(long int)*size*2);
+                size += size + size/5;
+                id_indexes = realloc(id_indexes, sizeof(INDEX)*size);
             }
         }
-
-        *id_indexes_size = i;
-        return id_indexes;
     }
 
-    return NULL;
+    *id_indexes_size = i;
+    if(*id_indexes_size != size) id_indexes = realloc(id_indexes, sizeof(INDEX)*i);
+    return id_indexes;
 }
 
 int print_index_table(INDEX* id_indexes, int id_indexes_size, int type_file){
@@ -247,49 +234,60 @@ int free_index_array(INDEX* id_indexes){
     return 1;
 }
 
-int recover_rrn(int* id_indexes, int id, int id_indexes_size, int mode){
-    //valor do rrn caso deva ser removido do vetor e retornado (mode == 1)
-    //inicialmente eh um valor nulo
-    int rrn = -1;
+long int verify_mode(
+    INDEX* id_indexes, int mid, 
+    int type_file, int mode, int end,
+    int* rrn, long int* BOS
+){
+    if(mode == 1){ //excluindo
+        id_indexes[mid].id = -1;
+        if(type_file == 1){
+            *rrn = id_indexes[mid].rrn;
+            id_indexes[mid].rrn  = -1;
+        }else{
+            *BOS = id_indexes[mid].BOS;
+            id_indexes[mid].BOS = -1;
+        }
 
+        //swap
+        INDEX aux = id_indexes[mid];
+        id_indexes[mid] = id_indexes[end];
+        id_indexes[end] = aux;
+    }
+    
+    return 1;
+}
+
+int recover_rrn(
+    INDEX* id_indexes, 
+    int id, int id_indexes_size, 
+    int mode, int type_file,
+    int* rrn, long int* BOS
+){  
     //BUSCA BINARIA SIMPLES
     int begin = 0;
-    //posicao do ultimo ID no vetor
-    int end   = id_indexes_size*2 - 2;
+    int end   = (id_indexes_size)-1;
 
-    while(begin < end){
-        int mid = (begin + end)/2; 
-        
-        //garante que sempre estara posicionado em um ID
-        if(mid % 2 != 0)
-            mid -= 1;
-
-        if(id_indexes[mid] == id){
-            if(mode == 1){ //excluindo
-                id_indexes[mid]      = -1;
-                rrn = id_indexes[mid + 1];
-                id_indexes[mid + 1]  = -1;
-                return rrn;
-            }
-
-            return id_indexes[mid + 1];
+    //printf("BUSCANDO %d -> ", id);
+    int mid = (begin + end)/2; 
+    while(begin <= end){
+        //printf("[%d] %d [%d] | ", id_indexes[begin].id, id_indexes[mid].id, id_indexes[end].id);
+        if(id_indexes[mid].id == id){
+            verify_mode(id_indexes, mid, type_file, mode, end, rrn, BOS);
+            return 1;   
         }
-        
-        
-        if(id > id_indexes[mid])
-            begin = mid+2;
+                
+        if(id > id_indexes[mid].id)
+            begin = mid + 1;
         else
-            end = mid - 2; //verificar
-    }
+            end = mid - 1;        
 
-    if(id_indexes[begin] == id){
-        if(mode == 1){ //busca para remocao
-            id_indexes[begin] = -1;
-            rrn = id_indexes[begin + 1];
-            id_indexes[begin + 1] = -1;
-        }else
-            return id_indexes[begin+1];
+        mid = (begin + end)/2;   
     }
+    //printf("\n");
+    return -1;
+}
 
-    return rrn;
+int qsort_compare(const void* a, const  void* b){
+    return ((INDEX*)a)->id - ((INDEX*)b)->id;
 }

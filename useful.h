@@ -25,9 +25,10 @@ int read_word(char* string, FILE* file_csv);
     double quotes, removing them   */
 void scan_quote_strings(char* string);
 
-char** create_array_fields_sfw(int n);
+char** create_array_fields(int n);
+
 char** read_search_fields(int n, int* is_there_id);
 
-int free_array_fields_sfw(char** array, int n);
+int free_array_fields(char** array, int n);
 
 void binarioNaTela(char *nomeArquivoBinario);

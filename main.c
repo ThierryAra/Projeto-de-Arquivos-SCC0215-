@@ -15,7 +15,7 @@
  ********************************************************************************/
 
 /* 
-    ERROR -> RETURNS -2
+    ERROR           -> RETURNS -2
     INEXISTENT DATA -> RETURNS -1
 */
 #include<stdio.h>
@@ -106,7 +106,7 @@ int main(){
             else if(res == 0)
                 printf("Registro inexistente.");
 
-            free_array_fields_sfw(array, n);
+            free_array_fields(array, n);
             break;
 
         case 4:     //search by RRN 
@@ -133,7 +133,7 @@ int main(){
             bin_file = fopen(name_bin, "rb");
             bin_index_file = fopen(name_index_bin, "w+b");
 
-             if(strcmp(type_file, "tipo1") == 0){
+            if(strcmp(type_file, "tipo1") == 0){
                 res = create_index_id(bin_file, bin_index_file, 1);            
             }else if(strcmp(type_file, "tipo2") == 0){
                 res = create_index_id(bin_file, bin_index_file, 2);
@@ -152,14 +152,37 @@ int main(){
 
             break;  
         
-        case 6:          
+        case 6:  ;
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
-            
-            bin_file = fopen(name_bin, "w+b");
-            bin_index_file = fopen(name_index_bin, "w+b");
+
+            int delete_amount = 0;
+            scanf("%d", &delete_amount);
+
+            bin_file = fopen(name_bin, "a+b");
+            bin_index_file = fopen(name_index_bin, "a+b");
+
+            if(strcmp(type_file, "tipo1") == 0){
+                res = delete_where(bin_file, bin_index_file, delete_amount, 1);
+            }else if(strcmp(type_file, "tipo2") == 0){
+                res = delete_where(bin_file, bin_index_file, delete_amount, 2);
+            }else    
+                printf("Falha no processamento do arquivo.");
+
+            fclose(bin_index_file);
             break;
-        
+        //case 7:
+            /* ;printf("ENTREI AQ");
+            name2[200];
+            read_word(name, stdin);;
+            
+            bin_file = fopen(name, "rb");
+            fseek(bin_file, 1, SEEK_SET);
+
+            int a = 0;
+            fread(&a, 1, sizeof(int), bin_file);
+            printf("A -> %d\n", a);
+            fclose(bin_file); */
     }
 
     if(bin_file != NULL) fclose(bin_file);  

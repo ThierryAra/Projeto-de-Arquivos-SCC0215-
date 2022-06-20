@@ -1,5 +1,5 @@
-objects = main.c record.c useful.c header.c index.c
-headers = record.h useful.h header.h index.h
+objects = main.c record.c useful.c header.c index.c list_stack.c
+headers = record.h useful.h header.h index.h list_stack.h
 executable = run
 
 all:
@@ -9,7 +9,12 @@ run: all
 	./$(executable)
 
 valgrind: all
-	valgrind --leak-check=full --track-origins=yes ./$(executable)
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
+
+valgrind_copy: all
+	cp -fR arquivos/antes/binario5.bin /
+	cp -fR arquivos/antes/indice5.bin /
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 zip:
 	zip thierry.zip $(objects) $(headers) $(bin) Makefile 

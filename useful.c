@@ -84,19 +84,19 @@ void scan_quote_strings(char* string){
 
     c = getchar();   
     //removes unnecessary characters before the word
-    while(c == '\n' || c == '\r' || c == '"')
+    while(c == '\n' || c == '\r' || c == '"' || c == ' ')
         c = getchar();
     
     do{
         string[i] = c;
         i++;
         c = getchar();
-    }while(c != '\n' && c != '\r' && c != '"' && c != EOF);
+    }while(c != '\n' && c != '\r' && c != '"' && c != EOF && c != ' ');
 
     string[i]  = '\0';
 }
 
-char** create_array_fields_sfw(int n){
+char** create_array_fields(int n){
     if(n == 0)
         return NULL;
 
@@ -110,7 +110,7 @@ char** create_array_fields_sfw(int n){
 }
 
 char** read_search_fields(int n, int* is_there_id){
-    char** array = create_array_fields_sfw(n);
+    char** array = create_array_fields(n);
             
     //{(campo_i, valor_i), ...}
     for (int i = 0; i < n*2; i++){
@@ -123,7 +123,7 @@ char** read_search_fields(int n, int* is_there_id){
     return array;
 }
 
-int free_array_fields_sfw(char** array, int n){
+int free_array_fields(char** array, int n){
     if(array == NULL || n <= 0)
         return -1;
 

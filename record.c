@@ -5,6 +5,7 @@
 #include"header.h"
 #include"record.h" 
 #include"index.h"
+#include"list_stack.h"
 
 int read_item_csv(FILE* csv_file, RECORD* r);
 void jump_header(FILE* file, int type_file);
@@ -30,8 +31,8 @@ int write_item(FILE* bin_file, RECORD* r, HEADER* header,
 int sum_vars(RECORD* r, int initial_sum);
 
 /*  Realiza uma busca parametrizada em bin_file */
-RECORD* parameterized_search(FILE* bin_file, HEADER* header, RECORD* r,
-                            char** fields, int n, int type_file);
+RECORD* parameterized_search(FILE* bin_file, HEADER* header, 
+                              char** fields, int n, int type_file);
 
 struct record{
     char removed;
@@ -60,10 +61,14 @@ RECORD* create_record(){
 }
 
 void free_rec(RECORD* r){
-    free(r->city);
-    free(r->brand);
-    free(r->model);
-    free(r);
+    printf("FREE REC\n");
+    if(r != NULL){
+        printf("-> FREE \n");
+        free(r->city);
+        free(r->brand);
+        free(r->model);
+        free(r);
+    }
 }
 
 int create_table(FILE* csv_file, FILE* bin_file, int type_file){
@@ -153,7 +158,7 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file){
     RECORD* r = create_record();
     HEADER* header = create_header();
     
-    while(parameterized_search(bin_file, header, r, fields, n, type_file) != NULL)
+    while((r = parameterized_search(bin_file, header, fields, n, type_file)) != NULL)
         print_record(r);
 
     free_header(header);
@@ -185,10 +190,10 @@ int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r){
 RECORD* parameterized_search(
     FILE* bin_file, 
     HEADER* header,
-    RECORD* r,
     char** fields, 
     int n, int type_file
 ){
+    RECORD* r = create_record();
     //checks whether the record was removed and contains the size of the record read
     int record_size = 0;
     //checks if the record has the same fields/values as the searched record
@@ -196,6 +201,7 @@ RECORD* parameterized_search(
 
     //fields index
     int i = 0;
+    //BOS do registro
     while((record_size = get_record(bin_file, r, header, type_file)) != -2){
         if(record_size == -1) // excluded register
             error = -1;
@@ -251,6 +257,7 @@ RECORD* parameterized_search(
         i = 0;
     }
 
+    free_rec(r);
     return NULL;
 }
 
@@ -526,93 +533,108 @@ int next_register(FILE* bin_file, int type_file){
 
 int delete_record(
     FILE* bin_file, 
-    int id, int rrn, 
-    int* id_indexes, 
-    int id_indexes_size
+    int id, int type_file,
+    int rrn, long int BOS
 ){
-    if(id_indexes == NULL)
-        return -2;
-
-    //removendo do vetor indexes
-    if(rrn < 0){
-        rrn = recover_rrn(id_indexes, id, id_indexes_size, 1);
+    if(type_file == 1){
+        add_stack(bin_file, rrn);
+    }else{
+        fseek(bin_file, BOS+1, SEEK_SET);
+        int record_size = 0;
+        fwrite(&record_size, 1, sizeof(int), bin_file);
+        add_list(bin_file, BOS, record_size);
     }
-
-    //buscando topo da fila de removidos
-    fseek(bin_file, 1, SEEK_SET);
-    int topo = 0;
-    fread(&topo, 1, sizeof(int), bin_file);
-    //atualizando o topo
-    fseek(bin_file, 1, SEEK_SET);
-    //printf("RRN Q SERA ESCRITO: %d\n", rrn);
-    fwrite(&rrn, 1, sizeof(int), bin_file);
-    //teste
-    int i = 0;
-    fseek(bin_file, 1, SEEK_SET);
-    fread(&i, 1, sizeof(int), bin_file);
-    //printf("NOVO TOPO = %d\n", i);
-
-    //retorna ao inicio do registro
-    fseek(bin_file, rrn*97 + 182, SEEK_SET);
-    //registro dinamicamente removido
-    fwrite("1", 1, sizeof(char), bin_file);
-    //printf("BYTEOFFSET %d PROX NO ARQUIVO: %d\n", rrn*97 + 182, topo);
-    fwrite(&topo, 1, sizeof(int), bin_file);
-    //teste
-    fseek(bin_file, -4, SEEK_CUR);
-    fread(&i, 1, sizeof(int), bin_file);
-    //printf("NOVO TOPO DO REGISTRO = %d\n\n\n", i);
-
-    //printf("partiu delecao recover -: \n");
-    //recover_rrn(id_indexes, id, id_indexes_size, 1);
 }   
 
-int delete_where(FILE* bin_file, FILE* index_file, 
-                int* id_indexes, int id_indexes_size, int n){
-    
+int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
+    if(bin_file == NULL || index_file == NULL)
+        return -2;
+    //if(check_status(bin_file) && check_status(index_file))
+    //    return -2;
+
     //quantidade de campos a serem buscados
     int amt_fields = 0;
     //variavel pra verificar se a busca sera por id ou sequencial
     int is_there_id = -1;
-
-    RECORD* r = create_record();
     
-    //loop interno
-    int j;
+    update_status(bin_file);
+    update_status(index_file);
+
+    RECORD* r = NULL;
+    HEADER* h = create_header();
+    int id_indexes_size = 0;
+    INDEX* id_indexes = read_index_file(bin_file, index_file, &id_indexes_size, type_file);
 
     //busca para remocao n vezes
     for(int i = 0; i < n; i++){
         scanf("%d", &amt_fields);
-        printf("CAMPOS = %d\n", amt_fields);
 
         //recebendo os campos de busca
-        char** fields = create_array_fields_sfw(amt_fields);  
-         
-        for (j = 0; j < amt_fields*2; j++){
+        char** fields = create_array_fields(amt_fields);  
+              
+        for (int j = 0; j < amt_fields*2; j++){
             read_word(fields[j], stdin);
-            printf("%s", fields[j]);
             if(strcmp(fields[j], "id") == 0)
                 is_there_id = j;
             scan_quote_strings(fields[++j]);
-            printf(": %s\n", fields[j]);
         }
-
+        
+        int res = 0;
+        int rrn = 0;
+        long int BOS = 0;
         //caso haja busca por ID o registro eh rapidamente recuperado
         if(is_there_id != -1){
-            int rrn = recover_rrn(id_indexes, atoi(fields[is_there_id+1]), id_indexes_size, 1);
-            //if(rrn >= 0)
-                //select_from_where(bin_file, fields, amt_fields, 
-                       //             rrn, id_indexes, id_indexes_size);
+            res = recover_rrn(id_indexes, atoi(fields[is_there_id+1]), 
+                              id_indexes_size, 1, type_file, &rrn, &BOS);
             
+            if(res > 0){
+                jump_to_record(bin_file, rrn, BOS);
+                r = parameterized_search(bin_file, h, fields, amt_fields, type_file);
+
+                if(r != NULL){
+                    print_record(r);
+                    id_indexes_size--;
+                    delete_record(bin_file, r->id, type_file, rrn, BOS);
+                }else{
+                    r = create_record();
+                    printf("\nNAO ENCONTRADO\n");
+                }
+            }                 
         //busca sequencial
         }else{
-            //printf("busca sequencial\n");
-            fseek(bin_file, 182, SEEK_SET);
-            //select_from_where(bin_file, fields, amt_fields, 
-            //                    -1, id_indexes, id_indexes_size);
+            char c = 0;
+            jump_header(bin_file, type_file);
+
+            while(fread(&c, 1, sizeof(char), bin_file) != 0){
+                ungetc(c, bin_file);
+                r = parameterized_search(bin_file, h, fields, amt_fields, type_file);
+                if(r != NULL){
+                    print_record(r);
+                    res = recover_rrn(id_indexes, r->id, id_indexes_size, 
+                                      1, type_file, &rrn, &BOS);
+                    if(res > 0){
+                        id_indexes_size--;    
+                        delete_record(bin_file, r->id, type_file, rrn, BOS);
+                    }   
+                }
+            }
         }
-            
-        free_array_fields_sfw(fields, amt_fields);
+        
+        fseek(bin_file, 0, SEEK_SET);
+        free_array_fields(fields, amt_fields);
         is_there_id = -1;
     }
+
+    update_status(bin_file);
+    update_status(index_file);    
+    free_header(h);
+    free_rec(r);
+    free_index_array(id_indexes);
+}
+
+void jump_to_record(FILE* file, int rrn, long int BOS){
+    if(rrn != 0)
+        fseek(file, (rrn*STATIC_REC_SIZE)+STATIC_REC_HEADER, SEEK_SET);
+    else
+        fseek(file, BOS, SEEK_SET);
 }
