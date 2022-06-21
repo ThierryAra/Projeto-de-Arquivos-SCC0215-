@@ -97,7 +97,6 @@ int check_status(FILE* bin_file){
     fseek(bin_file, 0, SEEK_SET);
 
     fread(&status, 1, sizeof(char), bin_file);
-    
     if(status == '0')
         return 0;
     else if(status == '1')

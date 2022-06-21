@@ -12,8 +12,8 @@ valgrind: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_copy: all
-	cp -fR arquivos/antes/binario5.bin /
-	cp -fR arquivos/antes/indice5.bin /
+	cp -fR arquivos/antes/binario5.bin .
+	cp -fR arquivos/antes/indice5.bin .
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 zip:

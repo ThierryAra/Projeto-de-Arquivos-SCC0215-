@@ -159,8 +159,8 @@ int main(){
             int delete_amount = 0;
             scanf("%d", &delete_amount);
 
-            bin_file = fopen(name_bin, "a+b");
-            bin_index_file = fopen(name_index_bin, "a+b");
+            bin_file = fopen(name_bin, "r+b");
+            bin_index_file = fopen(name_index_bin, "r+b");
 
             if(strcmp(type_file, "tipo1") == 0){
                 res = delete_where(bin_file, bin_index_file, delete_amount, 1);
@@ -169,22 +169,33 @@ int main(){
             }else    
                 printf("Falha no processamento do arquivo.");
 
-            fclose(bin_index_file);
-            break;
-        //case 7:
-            /* ;printf("ENTREI AQ");
-            name2[200];
-            read_word(name, stdin);;
-            
-            bin_file = fopen(name, "rb");
-            fseek(bin_file, 1, SEEK_SET);
+            if(res < 0)
+                printf("Falha no processamento do arquivo."); 
+            else{
+                //print_index_file(bin_index_file, 2);
+                fclose(bin_index_file);
+                fclose(bin_file);
+                bin_index_file = NULL;
+                bin_file       = NULL;
 
-            int a = 0;
-            fread(&a, 1, sizeof(int), bin_file);
-            printf("A -> %d\n", a);
-            fclose(bin_file); */
+                binarioNaTela(name_bin);
+                binarioNaTela(name_index_bin);
+            }
+            break;
+        case 7:;
+            
+            //read_word(name, stdin);;
+            char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice5.bin";
+            
+            bin_file = fopen(name2, "rb");
+            
+            int size = 0;
+            INDEX* index= read_index_file(bin_file, &size, 1);
+            print_index_table(index, size, 1);
     }
 
-    if(bin_file != NULL) fclose(bin_file);  
+    if(bin_file != NULL) 
+        fclose(bin_file);  
+    
     return 0;
 }

@@ -6,7 +6,6 @@
 #include"index.h"
 
 INDEX* read_data_file(FILE* bin_file, int* id_indexes_size, int type_file);
-int qsort_compare(const void* a, const  void* b);
 
 struct index{
     int id;
@@ -14,33 +13,39 @@ struct index{
     long int BOS;
 };
 
+void write_index(FILE* index_file, INDEX* index, int index_size, int type_file){
+    //write status (header) of the index file
+    char c = '0';
+    fwrite(&c, 1, sizeof(char), index_file);
+    
+    //control
+    int i = 0;
+    
+    while(i < index_size){
+        fwrite(&index[i].id, 1, sizeof(int), index_file);
+        if(index[i].id == 555)
+            printf("ID ACHADO\n");
+        if(type_file == 1)
+            fwrite(&index[i].rrn, 1, sizeof(int), index_file);
+        else
+            fwrite(&index[i].BOS, 1, sizeof(long int), index_file);
+            
+        //id_a = index[i].id;
+        i++;
+    }
+}
+
 int create_index_id(FILE* bin_file, FILE* index_file, int type_file){
     if(bin_file == NULL || index_file == NULL)
         return -2;
 
-    int indexes_size = 0;
-    INDEX* indexes = read_data_file(bin_file, &indexes_size, type_file);
-    if(indexes == NULL)
+    int index_size = 0;
+    INDEX* index = read_data_file(bin_file, &index_size, type_file);
+    if(index == NULL)
         return -2;
-
-    //write status (header) of the index file
-    char c = '0';
-    fwrite(&c, 1, sizeof(char), index_file);
-    int i = 0;
-    int id_a = 0;
-    while(i <= indexes_size){
-        fwrite(&indexes[i].id, 1, sizeof(int), index_file);
-        if(type_file == 1)
-            fwrite(&indexes[i].rrn, 1, sizeof(int), index_file);
-        else
-            fwrite(&indexes[i].BOS, 1, sizeof(long int), index_file);
-            
-        id_a = indexes[i].id;
-        i++;
-    }
     
-    update_status(index_file);
-    free_index_array(indexes);
+    write_index(index_file, index, index_size, type_file);
+
     return 1;
 }
 
@@ -125,7 +130,7 @@ INDEX* read_data_file(FILE* bin_file, int* id_indexes_size, int type_file){
             id_indexes = realloc(id_indexes, sizeof(INDEX)*i);
     }
 
-    qsort(id_indexes, *id_indexes_size, sizeof(INDEX), qsort_compare);
+    sort_id_indexes(id_indexes, *id_indexes_size);
     return id_indexes;
 }
 
@@ -156,21 +161,13 @@ int print_index_file(FILE* index_file, int type_file){
     fclose(index_file);
 }
 
-INDEX* read_index_file(
-    FILE* bin_file, FILE* index_file, 
-    int* id_indexes_size,     
-    int type_file
-){
-    if(bin_file == NULL || index_file == NULL)
-        return NULL;
-
-    int status = check_status(index_file);
-    if(status == 0)
+INDEX* read_index_file(FILE* index_file, int* id_indexes_size, int type_file){
+    if(index_file == NULL)
         return NULL;
 
     int id = 0, size = 1100, i = 0;
     INDEX* id_indexes = malloc(sizeof(INDEX)*size);
-
+    
     if(type_file == 1){     
         int rrn = 0;
 
@@ -199,8 +196,6 @@ INDEX* read_index_file(
             i++;
 
             if(i >= size){
-                //como os arquivos nao constumam ter + de 1000 registros
-                //o aumento ocorre gradativamente
                 size += size + size/5;
                 id_indexes = realloc(id_indexes, sizeof(INDEX)*size);
             }
@@ -216,13 +211,14 @@ int print_index_table(INDEX* id_indexes, int id_indexes_size, int type_file){
     if(id_indexes == NULL)
         return -1;
 
-    for(int i = 0; i < id_indexes_size*2; i += 2){
+    for(int i = 0; i < id_indexes_size; i += 1){
         if(type_file == 1)
-            printf("[%d] %d  |  ", id_indexes[i].id, id_indexes[i+1].rrn);
+            printf("[%d] %d  |  ", id_indexes[i].id, id_indexes[i].rrn);
         if(type_file == 2)
-            printf("[%d] %ld  |  ", id_indexes[i].id, id_indexes[i+1].BOS);
+            printf("[%d] %ld  |  ", id_indexes[i].id, id_indexes[i].BOS);
     }
-        
+    
+    printf("idindexsize %d\n", id_indexes_size);
     return 1;
 }
 
@@ -234,20 +230,17 @@ int free_index_array(INDEX* id_indexes){
     return 1;
 }
 
-long int verify_mode(
+int update_id_index(
     INDEX* id_indexes, int mid, 
-    int type_file, int mode, int end,
-    int* rrn, long int* BOS
+    int type_file, int mode, int end
 ){
     if(mode == 1){ //excluindo
         id_indexes[mid].id = -1;
-        if(type_file == 1){
-            *rrn = id_indexes[mid].rrn;
+        
+        if(type_file == 1)
             id_indexes[mid].rrn  = -1;
-        }else{
-            *BOS = id_indexes[mid].BOS;
+        else
             id_indexes[mid].BOS = -1;
-        }
 
         //swap
         INDEX aux = id_indexes[mid];
@@ -267,14 +260,18 @@ int recover_rrn(
     //BUSCA BINARIA SIMPLES
     int begin = 0;
     int end   = (id_indexes_size)-1;
-
+    //printf("\n\nFIM %d id end %d\n\n",end,id_indexes[end].id);
     //printf("BUSCANDO %d -> ", id);
     int mid = (begin + end)/2; 
     while(begin <= end){
         //printf("[%d] %d [%d] | ", id_indexes[begin].id, id_indexes[mid].id, id_indexes[end].id);
         if(id_indexes[mid].id == id){
-            verify_mode(id_indexes, mid, type_file, mode, end, rrn, BOS);
-            return 1;   
+            //printf("\nACHEI O %d\n", id_indexes[mid].id);
+            if(type_file == 1)
+                *rrn = id_indexes[mid].rrn;
+            else
+                *BOS = id_indexes[mid].BOS;
+            return mid;   
         }
                 
         if(id > id_indexes[mid].id)
@@ -290,4 +287,12 @@ int recover_rrn(
 
 int qsort_compare(const void* a, const  void* b){
     return ((INDEX*)a)->id - ((INDEX*)b)->id;
+}
+
+int qsort_compare_inverse(const void* a, const  void* b){
+    return -(((INDEX*)a)->id - ((INDEX*)b)->id);
+}
+
+void sort_id_indexes(INDEX* array, int array_size){
+    qsort(array, array_size, sizeof(INDEX), qsort_compare);
 }

@@ -61,9 +61,7 @@ RECORD* create_record(){
 }
 
 void free_rec(RECORD* r){
-    printf("FREE REC\n");
     if(r != NULL){
-        printf("-> FREE \n");
         free(r->city);
         free(r->brand);
         free(r->model);
@@ -226,8 +224,10 @@ RECORD* parameterized_search(
             }else if(strcmp(fields[i], "sigla") == 0){
                 if( fields[i+1][0] != r->abbreviation[0] || 
                     fields[i+1][1] != r->abbreviation[1] ){
-                    
                     error = -1;
+                }else{
+                    if(i == 3)
+                        printf("\n\nÉ A SIGLA CERTA\n\n");
                 }
             }else if(strcmp(fields[i], "cidade") == 0){
                 if(r->city_size <= 0 || strcmp(fields[i+1], r->city) != 0){
@@ -533,28 +533,40 @@ int next_register(FILE* bin_file, int type_file){
 
 int delete_record(
     FILE* bin_file, 
-    int id, int type_file,
-    int rrn, long int BOS
+    int type_file, int rrn, 
+    long int BOS, int position,
+    INDEX* index, int *index_size
 ){
     if(type_file == 1){
+        jump_to_record(bin_file, rrn, 0);
+        //marca o registro como removido
+        fwrite("1", 1, sizeof(char), bin_file);
         add_stack(bin_file, rrn);
     }else{
-        fseek(bin_file, BOS+1, SEEK_SET);
+        jump_to_record(bin_file, 0, BOS);
+        //marca o registro como removido
+        fwrite("1", 1, sizeof(char), bin_file);
+
         int record_size = 0;
-        fwrite(&record_size, 1, sizeof(int), bin_file);
+        fread(&record_size, 1, sizeof(int), bin_file);
         add_list(bin_file, BOS, record_size);
     }
+
+    //atualiza o vetor de indices
+    update_id_index(index, position, type_file, 1, *index_size-1);
+    (*index_size)--;
+    sort_id_indexes(index, *index_size);
 }   
 
 int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
     if(bin_file == NULL || index_file == NULL)
         return -2;
-    //if(check_status(bin_file) && check_status(index_file))
-    //    return -2;
+    if(!check_status(bin_file) && !check_status(index_file))
+        return -2;
 
     //quantidade de campos a serem buscados
     int amt_fields = 0;
-    //variavel pra verificar se a busca sera por id ou sequencial
+    //variavel que armazena a posicao que exista uma busca por id em 'fileds'
     int is_there_id = -1;
     
     update_status(bin_file);
@@ -562,43 +574,43 @@ int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
 
     RECORD* r = NULL;
     HEADER* h = create_header();
-    int id_indexes_size = 0;
-    INDEX* id_indexes = read_index_file(bin_file, index_file, &id_indexes_size, type_file);
 
+    //quantidade de registros removidos
+    int removed_amount = 0;
+    
+    //Vetor que armazenara os id/(rrn/BOS) do arquivo de indice (index_file)
+    int index_size = 0;
+    INDEX* index = read_index_file(index_file, &index_size, type_file);
+    //print_index_table(index, index_size, type_file);
+    
     //busca para remocao n vezes
     for(int i = 0; i < n; i++){
         scanf("%d", &amt_fields);
 
-        //recebendo os campos de busca
-        char** fields = create_array_fields(amt_fields);  
-              
-        for (int j = 0; j < amt_fields*2; j++){
-            read_word(fields[j], stdin);
-            if(strcmp(fields[j], "id") == 0)
-                is_there_id = j;
-            scan_quote_strings(fields[++j]);
-        }
+        char** fields = read_search_fields(amt_fields, &is_there_id);  
         
-        int res = 0;
+        int position = 0;
         int rrn = 0;
         long int BOS = 0;
         //caso haja busca por ID o registro eh rapidamente recuperado
         if(is_there_id != -1){
-            res = recover_rrn(id_indexes, atoi(fields[is_there_id+1]), 
-                              id_indexes_size, 1, type_file, &rrn, &BOS);
+            position = recover_rrn(index, atoi(fields[is_there_id+1]), 
+                              index_size, 1, type_file, &rrn, &BOS);
             
-            if(res > 0){
+            //printf("\nposition %d id buscado %s rrn %d\n", position, fields[is_there_id+1], rrn);
+            if(position > 0){
                 jump_to_record(bin_file, rrn, BOS);
                 r = parameterized_search(bin_file, h, fields, amt_fields, type_file);
-
+                
                 if(r != NULL){
                     print_record(r);
-                    id_indexes_size--;
-                    delete_record(bin_file, r->id, type_file, rrn, BOS);
-                }else{
-                    r = create_record();
-                    printf("\nNAO ENCONTRADO\n");
-                }
+                    delete_record(bin_file, type_file, rrn, BOS, 
+                                  position, index, &index_size);
+                    removed_amount++;
+                    free_rec(r);
+                }//else
+                    //printf("NAO ENCONTRADO\n");
+                
             }                 
         //busca sequencial
         }else{
@@ -610,26 +622,32 @@ int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
                 r = parameterized_search(bin_file, h, fields, amt_fields, type_file);
                 if(r != NULL){
                     print_record(r);
-                    res = recover_rrn(id_indexes, r->id, id_indexes_size, 
-                                      1, type_file, &rrn, &BOS);
-                    if(res > 0){
-                        id_indexes_size--;    
-                        delete_record(bin_file, r->id, type_file, rrn, BOS);
+                    position = recover_rrn(index, r->id, index_size, 
+                                           1, type_file, &rrn, &BOS);
+                    if(position > 0){   
+                        delete_record(bin_file, type_file, rrn, BOS, 
+                                      position, index, &index_size);
+                        removed_amount++;
+                        free_rec(r);
                     }   
                 }
             }
         }
         
-        fseek(bin_file, 0, SEEK_SET);
+        
         free_array_fields(fields, amt_fields);
         is_there_id = -1;
     }
 
+    //print_index_table(index, index_size, type_file);
+    write_index(index_file, index, index_size, type_file);
     update_status(bin_file);
-    update_status(index_file);    
+    update_status(index_file);  
+    //atualiza o numero de registros removidos
+    att_numRecRem(bin_file, 1, type_file, removed_amount);  
+    
     free_header(h);
-    free_rec(r);
-    free_index_array(id_indexes);
+    free_index_array(index);
 }
 
 void jump_to_record(FILE* file, int rrn, long int BOS){

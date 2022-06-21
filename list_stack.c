@@ -10,7 +10,7 @@
     remocoes como para adicoes de registros
         mode: 1 -> Remocao
             : 2 -> Adicao                                       */
-void att_numRecRem(FILE* bin_file, int mode, int type_file){
+void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity){
     int numRecRem = 0;
     if(type_file == 1){
         fseek(bin_file, 178, SEEK_SET);
@@ -22,13 +22,13 @@ void att_numRecRem(FILE* bin_file, int mode, int type_file){
 
     //Removendo um registro
     if(mode == 1)
-        if(numRecRem < 0)
-            numRecRem = 1;
+        if(numRecRem <= 0)
+            numRecRem = quantity;
         else
-            numRecRem++;
+            numRecRem += quantity;
     else //Adicionando um registro
-        numRecRem--;
-
+        numRecRem -= quantity;
+        
     fseek(bin_file, -sizeof(int), SEEK_CUR);
     fwrite(&numRecRem, 1, sizeof(int), bin_file);
 }
@@ -41,18 +41,18 @@ void add_stack(FILE* bin_file, int rrn){
     int top_stack = 0;
     fseek(bin_file, 1, SEEK_SET);
     fread(&top_stack, 1, sizeof(int), bin_file);
-    printf("top_stack %d\n", top_stack);
+    //printf("top_stack %d\n", top_stack);
 
     //Escreve o novo topo da pilha
     fseek(bin_file, -4, SEEK_CUR);
     rrn = 0;
     fwrite(&rrn, 1, sizeof(int), bin_file);
-    printf("rrn  %d\n", rrn);
+    //printf("rrn  %d\n", rrn);
 
-    int new_top_stack = 0;
+    /* int new_top_stack = 0;
     fseek(bin_file, -4, SEEK_CUR);
     fread(&new_top_stack, 1, sizeof(int), bin_file);
-    printf("new_top_stack %d\n", new_top_stack);
+    printf("new_top_stack %d\n", new_top_stack); */
     
     //Verifica se ja existia algum elemento na fila
     if(top_stack != -1){
@@ -60,9 +60,6 @@ void add_stack(FILE* bin_file, int rrn){
         fseek(bin_file, (rrn*STATIC_REC_SIZE)+STATIC_REC_HEADER+1, SEEK_SET);
         fwrite(&top_stack, 1, sizeof(int), bin_file);
     }
-
-    //alterar o numero de registros removidos
-    att_numRecRem(bin_file, 1, 1);
 }
 
 //-------------------------------LIST
@@ -115,7 +112,4 @@ void add_list(FILE* bin_file, long int BOS, int record_size){
             fwrite(&new_BOS, 1, sizeof(long int), bin_file);
         }
     }
-
-    //alterar o numero de registros removidos
-    att_numRecRem(bin_file, 1, 2);
 }
