@@ -16,6 +16,11 @@ valgrind_copy: all
 	cp -fR arquivos/antes/indice5.bin .
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
+valgrind_lab: all
+	cp -fR /mnt/c/Users/12681094/Documents/Projeto-de-Aquivos-SCC0215-/arquivos/antes/binario5.bin .
+	cp -fR /mnt/c/Users/12681094/Documents/Projeto-de-Aquivos-SCC0215-/arquivos/antes/indice5.bin .
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
+
 zip:
 	zip thierry.zip $(objects) $(headers) $(bin) Makefile 
 
