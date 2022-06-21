@@ -160,23 +160,18 @@ int main(){
             scanf("%d", &delete_amount);
 
             bin_file = fopen(name_bin, "r+b");
-            bin_index_file = fopen(name_index_bin, "r+b");
 
             if(strcmp(type_file, "tipo1") == 0){
-                res = delete_where(bin_file, bin_index_file, delete_amount, 1);
+                res = delete_where(bin_file, name_index_bin, delete_amount, 1);
             }else if(strcmp(type_file, "tipo2") == 0){
-                res = delete_where(bin_file, bin_index_file, delete_amount, 2);
+                res = delete_where(bin_file, name_index_bin, delete_amount, 2);
             }else    
                 printf("Falha no processamento do arquivo.");
 
             if(res < 0)
                 printf("Falha no processamento do arquivo."); 
             else{
-                //print_index_file(bin_index_file, 2);
-                fclose(bin_index_file);
                 fclose(bin_file);
-                bin_index_file = NULL;
-                bin_file       = NULL;
 
                 binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);

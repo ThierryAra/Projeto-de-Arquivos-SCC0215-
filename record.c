@@ -521,11 +521,13 @@ void jump_header(FILE* file, int type_file){
 int next_register(FILE* bin_file, int type_file){
     if(type_file == 1) 
         fseek(bin_file, STATIC_REC_SIZE-1, SEEK_CUR);
-    else{
+    else if(type_file == 2){
         int size_rec = 0;
         fread(&size_rec, 1, sizeof(int), bin_file);
         fseek(bin_file, size_rec, SEEK_CUR);
         return size_rec + 5;           
+    }else{
+        return -1;
     }    
 
     return 1;
@@ -535,13 +537,14 @@ int delete_record(
     FILE* bin_file, 
     int type_file, int rrn, 
     long int BOS, int position,
-    INDEX* index, int *index_size
+    INDEX* index, int *index_size,
+    STACK* stack
 ){
     if(type_file == 1){
         jump_to_record(bin_file, rrn, 0);
         //marca o registro como removido
         fwrite("1", 1, sizeof(char), bin_file);
-        add_stack(bin_file, rrn);
+        add_stack(stack, rrn);
     }else{
         jump_to_record(bin_file, 0, BOS);
         //marca o registro como removido
@@ -558,22 +561,22 @@ int delete_record(
     sort_id_indexes(index, *index_size);
 }   
 
-int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
+int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
+    FILE* index_file = fopen(name_index, "r+b");
     if(bin_file == NULL || index_file == NULL)
         return -2;
     if(!check_status(bin_file) && !check_status(index_file))
         return -2;
-
-    //quantidade de campos a serem buscados
-    int amt_fields = 0;
-    //variavel que armazena a posicao que exista uma busca por id em 'fileds'
-    int is_there_id = -1;
     
     update_status(bin_file);
     update_status(index_file);
 
     RECORD* r = NULL;
     HEADER* h = create_header();
+    STACK* stack = NULL;
+
+    if(type_file == 1)
+        stack = create_stack(300);
 
     //quantidade de registros removidos
     int removed_amount = 0;
@@ -582,7 +585,13 @@ int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
     int index_size = 0;
     INDEX* index = read_index_file(index_file, &index_size, type_file);
     //print_index_table(index, index_size, type_file);
-    
+    fclose(index_file);
+
+    //quantidade de campos a serem buscados
+    int amt_fields = 0;
+    //variavel que armazena a posicao que exista uma busca por id em 'fileds'
+    int is_there_id = -1;
+
     //busca para remocao n vezes
     for(int i = 0; i < n; i++){
         scanf("%d", &amt_fields);
@@ -595,7 +604,7 @@ int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
         //caso haja busca por ID o registro eh rapidamente recuperado
         if(is_there_id != -1){
             position = recover_rrn(index, atoi(fields[is_there_id+1]), 
-                              index_size, 1, type_file, &rrn, &BOS);
+                              index_size, type_file, &rrn, &BOS);
             
             //printf("\nposition %d id buscado %s rrn %d\n", position, fields[is_there_id+1], rrn);
             if(position > 0){
@@ -604,8 +613,8 @@ int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
                 
                 if(r != NULL){
                     print_record(r);
-                    delete_record(bin_file, type_file, rrn, BOS, 
-                                  position, index, &index_size);
+                    delete_record(bin_file, type_file, rrn, BOS, position, 
+                                  index, &index_size, stack);
                     removed_amount++;
                     free_rec(r);
                 }//else
@@ -623,10 +632,10 @@ int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
                 if(r != NULL){
                     print_record(r);
                     position = recover_rrn(index, r->id, index_size, 
-                                           1, type_file, &rrn, &BOS);
+                                           type_file, &rrn, &BOS);
                     if(position > 0){   
-                        delete_record(bin_file, type_file, rrn, BOS, 
-                                      position, index, &index_size);
+                        delete_record(bin_file, type_file, rrn, BOS, position, 
+                                      index, &index_size, stack);
                         removed_amount++;
                         free_rec(r);
                     }   
@@ -634,20 +643,30 @@ int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file){
             }
         }
         
-        
         free_array_fields(fields, amt_fields);
         is_there_id = -1;
     }
 
+    //tranfere a estrutura da stack para o arquivo
+    if(type_file == 1) write_stack(bin_file, stack); 
+    //else
+
     //print_index_table(index, index_size, type_file);
+    //Reabre o arquivo de indice para ser reescrito e exclui o conteudo anterior
+    index_file = fopen(name_index, "w+b");
     write_index(index_file, index, index_size, type_file);
-    update_status(bin_file);
-    update_status(index_file);  
+     
     //atualiza o numero de registros removidos
     att_numRecRem(bin_file, 1, type_file, removed_amount);  
     
-    free_header(h);
+    update_status(bin_file);
+    update_status(index_file); 
+    
     free_index_array(index);
+    fclose(index_file);
+    free_stack(stack);
+    free_header(h);
+    return 1;
 }
 
 void jump_to_record(FILE* file, int rrn, long int BOS){

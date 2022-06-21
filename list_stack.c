@@ -8,8 +8,9 @@
 /*
     Atuliza o campo numRecRem do cabecalho do arquivo, tanto para
     remocoes como para adicoes de registros
-        mode: 1 -> Remocao
-            : 2 -> Adicao                                       */
+        mode
+             1 -> Remocao
+             2 -> Adicao                                       */
 void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity){
     int numRecRem = 0;
     if(type_file == 1){
@@ -34,31 +35,70 @@ void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity){
 }
 
 //-------------------------------STACK
-void add_stack(FILE* bin_file, int rrn){
-    if(rrn == -1)
+struct stack{
+    int rec_amount;
+    int* r_stack;
+};
+
+STACK* create_stack(int stack_size){
+    STACK* stack = malloc(sizeof(STACK));
+
+    stack->rec_amount = 0;
+    stack->r_stack    = malloc(stack_size*sizeof(int));
+
+    return stack;
+}
+
+void free_stack(STACK* stack){
+    if(stack != NULL){
+        if(stack->r_stack != NULL)
+            free(stack->r_stack);
+        
+        free(stack);
+    }
+}
+
+void add_stack(STACK* stack, int rrn){
+    if(stack == NULL || rrn == -1)
         return;
 
-    int top_stack = 0;
+    printf("ADICIONADO NA STACK %d [%d]\n", rrn, stack->rec_amount);
+    stack->r_stack[stack->rec_amount++] = rrn;
+}
+
+int write_stack(FILE* bin_file, STACK* stack){
+    if(stack->rec_amount == 0)
+        return -1;
+
+    int rrn = stack->r_stack[stack->rec_amount - 1];
+    //atualiza o topo da stack
     fseek(bin_file, 1, SEEK_SET);
-    fread(&top_stack, 1, sizeof(int), bin_file);
-    //printf("top_stack %d\n", top_stack);
-
-    //Escreve o novo topo da pilha
-    fseek(bin_file, -4, SEEK_CUR);
-    rrn = 0;
     fwrite(&rrn, 1, sizeof(int), bin_file);
-    //printf("rrn  %d\n", rrn);
 
-    /* int new_top_stack = 0;
-    fseek(bin_file, -4, SEEK_CUR);
-    fread(&new_top_stack, 1, sizeof(int), bin_file);
-    printf("new_top_stack %d\n", new_top_stack); */
-    
-    //Verifica se ja existia algum elemento na fila
-    if(top_stack != -1){
-        //move o ponteiro ate o campo next do penultimo registro removido
-        fseek(bin_file, (rrn*STATIC_REC_SIZE)+STATIC_REC_HEADER+1, SEEK_SET);
-        fwrite(&top_stack, 1, sizeof(int), bin_file);
+    int old_rrn = 0;
+    //Adiciona a pilha a estrutura dos registros excluidos no arquivo
+    while(stack->rec_amount > 0){
+        
+        if(stack->rec_amount == 1)
+            break;
+
+        rrn     = stack->r_stack[stack->rec_amount - 1];
+        old_rrn = stack->r_stack[stack->rec_amount - 2];
+
+        jump_to_record(bin_file, rrn, 0);
+        fseek(bin_file, 1, SEEK_CUR);
+        fwrite(&old_rrn, 1, sizeof(int), bin_file);
+
+        stack->rec_amount--;
+    }
+}
+
+void print_stack(STACK* stack){
+    int i = 0;
+
+    for (i = 0; i < stack->rec_amount; i++)
+    {
+        printf("%d | ", stack->r_stack[i]);
     }
 }
 

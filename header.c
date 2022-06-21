@@ -8,6 +8,8 @@ HEADER* create_header(){
     HEADER* header = malloc(sizeof(HEADER));
 
     header->status = '0';
+    header->top_BOS = -1;
+    header->top_rrn = -1;
     strcpy(header->description, "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL");
     strcpy(header->desC1, "CODIGO IDENTIFICADOR: ");
     strcpy(header->desC2, "ANO DE FABRICACAO: ");
@@ -37,15 +39,15 @@ int write_header(HEADER* h, FILE* bin_file, int type_file){
         return -2;
 
     //values to be saved as default
-    int i = 0, ni = -1; 
-    long int li = 0, nli = -1;
+    int i = 0; 
+    long int li = 0;
     
     fwrite(&h->status, 1, sizeof(char), bin_file);   //status
     
     if(type_file == 1)
-        fwrite(&ni, 1, sizeof(int), bin_file);       //topo
+        fwrite(&h->top_rrn, 1, sizeof(int), bin_file);       //topo
     else if(type_file == 2)
-        fwrite(&nli, 1, sizeof(long int), bin_file);                   
+        fwrite(&h->top_BOS, 1, sizeof(long int), bin_file);                   
     
     fwrite(h->description, 40, sizeof(char), bin_file);                           
     fwrite(h->desC1, 22, sizeof(char), bin_file);
@@ -77,7 +79,7 @@ char update_status(FILE* bin_file){
     
     fseek(bin_file, 0, SEEK_SET);
     fread(&status, 1, sizeof(char), bin_file);
-    //printf("li %c -> ", status);
+    printf("li %c -> ", status);
     if(status == '0'){
         fseek(bin_file, 0, SEEK_SET);
         fwrite("1", 1, sizeof(char), bin_file);
@@ -88,7 +90,7 @@ char update_status(FILE* bin_file){
         status = '0';
     }
 
-    //printf(" %c\n", status);
+    printf(" %c\n", status);
     return status;
 }
 

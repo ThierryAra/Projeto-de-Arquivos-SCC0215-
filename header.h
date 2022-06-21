@@ -4,6 +4,8 @@
 
 typedef struct header{
     char status;
+    int top_rrn;
+    long int top_BOS;
     char description[40];
     char desC1[22];
     char desC2[19];

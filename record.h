@@ -44,8 +44,21 @@ int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r);
 int print_record(RECORD* r);
 
 //-------------------------TRABALHO 2-------------------------------//
+/*
+    Pula exatamente 1 registo na leitura do arquivo binario
+    RETURN: -1 caso type_file seja invalido              */
 int next_register(FILE* bin_file, int type_file);
 
-int delete_where(FILE* bin_file, FILE* index_file, int n, int type_file);
+/*
+    Recebe da entrada k duplas (campo, valor), 'n' vezes, que serao buscados
+    a partir do arquivo de indices (caso a busca seja por id) ou sequencialmente
+    em bin_file, caso um registro corresponda aos campos apresentados ele sera
+    virtualmente excluido.
+    RETURN:
+            -2 se os arquivos estao corrompidos ou nao existem
+             1 sucesso                                                         */
+int delete_where(FILE* bin_file, char* index_file, int n, int type_file);
 
-void jump_to_record(FILE* file, int rrn, long int BOS);;
+/*  A partir do RRN/BOS, da um fseek diretamente para a posicao.
+    Se rrn e BOS sao nao nulos, apenas o fseek do rrn sera realizado           */
+void jump_to_record(FILE* file, int rrn, long int BOS);

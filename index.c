@@ -21,16 +21,15 @@ void write_index(FILE* index_file, INDEX* index, int index_size, int type_file){
     //control
     int i = 0;
     
+    //Percorre todas as posicoes do vetor de indices
     while(i < index_size){
         fwrite(&index[i].id, 1, sizeof(int), index_file);
-        if(index[i].id == 555)
-            printf("ID ACHADO\n");
+
         if(type_file == 1)
             fwrite(&index[i].rrn, 1, sizeof(int), index_file);
         else
             fwrite(&index[i].BOS, 1, sizeof(long int), index_file);
-            
-        //id_a = index[i].id;
+        
         i++;
     }
 }
@@ -42,7 +41,7 @@ int create_index_id(FILE* bin_file, FILE* index_file, int type_file){
     int index_size = 0;
     INDEX* index = read_data_file(bin_file, &index_size, type_file);
     if(index == NULL)
-        return -2;
+        return -1;
     
     write_index(index_file, index, index_size, type_file);
 
@@ -157,8 +156,6 @@ int print_index_file(FILE* index_file, int type_file){
             printf("%d %ld |", id, BOS);
         }
     }
-    
-    fclose(index_file);
 }
 
 INDEX* read_index_file(FILE* index_file, int* id_indexes_size, int type_file){
@@ -230,7 +227,7 @@ int free_index_array(INDEX* id_indexes){
     return 1;
 }
 
-int update_id_index(
+void update_id_index(
     INDEX* id_indexes, int mid, 
     int type_file, int mode, int end
 ){
@@ -247,15 +244,12 @@ int update_id_index(
         id_indexes[mid] = id_indexes[end];
         id_indexes[end] = aux;
     }
-    
-    return 1;
 }
 
 int recover_rrn(
     INDEX* id_indexes, 
     int id, int id_indexes_size, 
-    int mode, int type_file,
-    int* rrn, long int* BOS
+    int type_file, int* rrn, long int* BOS
 ){  
     //BUSCA BINARIA SIMPLES
     int begin = 0;
