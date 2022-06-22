@@ -79,7 +79,7 @@ char update_status(FILE* bin_file){
     
     fseek(bin_file, 0, SEEK_SET);
     fread(&status, 1, sizeof(char), bin_file);
-    printf("li %c -> ", status);
+    //printf("li %c -> ", status);
     if(status == '0'){
         fseek(bin_file, 0, SEEK_SET);
         fwrite("1", 1, sizeof(char), bin_file);
@@ -90,7 +90,7 @@ char update_status(FILE* bin_file){
         status = '0';
     }
 
-    printf(" %c\n", status);
+    //printf(" %c\n", status);
     return status;
 }
 

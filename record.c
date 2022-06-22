@@ -31,8 +31,8 @@ int write_item(FILE* bin_file, RECORD* r, HEADER* header,
 int sum_vars(RECORD* r, int initial_sum);
 
 /*  Realiza uma busca parametrizada em bin_file */
-RECORD* parameterized_search(FILE* bin_file, HEADER* header, 
-                              char** fields, int n, int type_file);
+RECORD* parameterized_search(FILE* bin_file, HEADER* header, char** fields,
+                             int n, int type_file, int* rec_size);
 
 struct record{
     char removed;
@@ -155,8 +155,9 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file){
     //record that will be compared
     RECORD* r = create_record();
     HEADER* header = create_header();
-    
-    while((r = parameterized_search(bin_file, header, fields, n, type_file)) != NULL)
+    int rec_size = 0;
+
+    while((r = parameterized_search(bin_file, header, fields, n, type_file, &rec_size)) != NULL)
         print_record(r);
 
     free_header(header);
@@ -189,7 +190,8 @@ RECORD* parameterized_search(
     FILE* bin_file, 
     HEADER* header,
     char** fields, 
-    int n, int type_file
+    int n, int type_file,
+    int* rec_size
 ){
     RECORD* r = create_record();
     //checks whether the record was removed and contains the size of the record read
@@ -249,8 +251,10 @@ RECORD* parameterized_search(
         }
 
         //checks if it is really the record you are looking for
-        if(error > 0)
+        if(error > 0){
+            *rec_size = record_size;
             return r;
+        }
         
         //reset error for a next search
         error = 1;
@@ -398,7 +402,7 @@ int read_fields_t2(FILE* bin_file, HEADER* header, RECORD* r, int* bytes_scanned
     for (int i = 0; i < 3; i++){
         //checks if there are more fields
         if(*bytes_scanned == record_size)
-            return record_size;
+            break;
 
         *bytes_scanned += add_str_field(bin_file, r, header);
     }
@@ -412,19 +416,14 @@ int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file){
     //fixed length fields
     if(fread(&r->removed, 1, sizeof(char), bin_file) == 0)
         return -2; 
-        
+
     //checks if the record was not logically removed
     if(r->removed == '1'){
-        if(type_file == 1)
-            fseek(bin_file, STATIC_REC_SIZE-1, SEEK_CUR);
-        else if(type_file == 2){
-            fread(&bytes_scanned, 1, sizeof(int), bin_file);
-            fseek(bin_file, bytes_scanned, SEEK_CUR);
-        }    
+        next_register(bin_file, type_file);
         return -1;
     }
 
-    int record_size = 0;
+    int record_size = 1;
     
     //next
     if(type_file == 1){
@@ -434,6 +433,7 @@ int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file){
     }else if(type_file == 2){
         bytes_scanned = 22;
         fread(&record_size, 1, sizeof(int), bin_file);
+        
         long int next;
         fread(&next, 1, sizeof(long int), bin_file);
     }
@@ -454,14 +454,15 @@ int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file){
     
     if(type_file == 1)
         read_fields_t1(bin_file, header, r, &bytes_scanned);
-    else if(type_file == 2)
+    else if(type_file == 2){
         read_fields_t2(bin_file, header, r, &bytes_scanned, record_size);
+    }
 
     //removes garbage from registry and from buffer
     if(type_file == 1)
         fseek(bin_file, STATIC_REC_SIZE - bytes_scanned, SEEK_CUR);
     
-    return 1;
+    return record_size;
 }
 
 int print_record(RECORD* r){
@@ -509,14 +510,6 @@ void jump_header(FILE* file, int type_file){
     if(type_file == 1) fseek(file, STATIC_REC_HEADER, SEEK_SET);
     else               fseek(file, VARIABLE_REC_HEADER, SEEK_SET);
 }
-/* void next_register(FILE* bin_file, int quantity, int type_file){
-    if(type_file == 1)
-        fseek(bin_file, STATIC_REC_SIZE-1, SEEK_CUR);
-    else if(type_file == 2){
-        fseek(bin_file, quantity, SEEK_CUR);
-    }
-} */
-
 /* --------------------------TRABALHO 2-------------------------------- */
 int next_register(FILE* bin_file, int type_file){
     if(type_file == 1) 
@@ -538,27 +531,20 @@ int delete_record(
     int type_file, int rrn, 
     long int BOS, int position,
     INDEX* index, int *index_size,
-    STACK* stack
+    int rec_size,
+    STACK* stack, LIST* list
 ){
     if(type_file == 1){
         jump_to_record(bin_file, rrn, 0);
-        //marca o registro como removido
-        fwrite("1", 1, sizeof(char), bin_file);
         add_stack(stack, rrn);
     }else{
-        jump_to_record(bin_file, 0, BOS);
-        //marca o registro como removido
-        fwrite("1", 1, sizeof(char), bin_file);
-
-        int record_size = 0;
-        fread(&record_size, 1, sizeof(int), bin_file);
-        add_list(bin_file, BOS, record_size);
+        add_sorted_to_list(list, BOS, rec_size);
     }
-
+    
     //atualiza o vetor de indices
-    update_id_index(index, position, type_file, 1, *index_size-1);
     (*index_size)--;
-    sort_id_indexes(index, *index_size);
+    update_id_index(index, position, type_file, 1, *index_size);
+    sort_id_index(index, *index_size);
 }   
 
 int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
@@ -568,15 +554,22 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
     if(!check_status(bin_file) && !check_status(index_file))
         return -2;
     
+    //Atualiza o staus dos arquivos como inconsistente para realizar mudancas
     update_status(bin_file);
     update_status(index_file);
 
     RECORD* r = NULL;
     HEADER* h = create_header();
     STACK* stack = NULL;
+    LIST* list   = NULL;
 
-    if(type_file == 1)
-        stack = create_stack(300);
+    if(type_file == 1){
+        stack = create_stack(500);
+        read_stack_top(bin_file, stack);
+    }else{
+        list = create_list(500);
+        read_list(bin_file, list);
+    }
 
     //quantidade de registros removidos
     int removed_amount = 0;
@@ -585,7 +578,7 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
     int index_size = 0;
     INDEX* index = read_index_file(index_file, &index_size, type_file);
     //print_index_table(index, index_size, type_file);
-    fclose(index_file);
+    
 
     //quantidade de campos a serem buscados
     int amt_fields = 0;
@@ -601,6 +594,7 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
         int position = 0;
         int rrn = 0;
         long int BOS = 0;
+        int rec_size;
         //caso haja busca por ID o registro eh rapidamente recuperado
         if(is_there_id != -1){
             position = recover_rrn(index, atoi(fields[is_there_id+1]), 
@@ -609,14 +603,15 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
             //printf("\nposition %d id buscado %s rrn %d\n", position, fields[is_there_id+1], rrn);
             if(position > 0){
                 jump_to_record(bin_file, rrn, BOS);
-                r = parameterized_search(bin_file, h, fields, amt_fields, type_file);
+                r = parameterized_search(bin_file, h, fields, amt_fields, type_file, &rec_size);
                 
                 if(r != NULL){
-                    print_record(r);
+                    //print_record(r);
                     delete_record(bin_file, type_file, rrn, BOS, position, 
-                                  index, &index_size, stack);
+                                  index, &index_size, rec_size, stack, list);
                     removed_amount++;
                     free_rec(r);
+                    
                 }//else
                     //printf("NAO ENCONTRADO\n");
                 
@@ -628,17 +623,18 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
 
             while(fread(&c, 1, sizeof(char), bin_file) != 0){
                 ungetc(c, bin_file);
-                r = parameterized_search(bin_file, h, fields, amt_fields, type_file);
+                r = parameterized_search(bin_file, h, fields, amt_fields, type_file, &rec_size);
                 if(r != NULL){
-                    print_record(r);
                     position = recover_rrn(index, r->id, index_size, 
                                            type_file, &rrn, &BOS);
-                    if(position > 0){   
+                    if(position > 0){  
+                        //print_record(r);
                         delete_record(bin_file, type_file, rrn, BOS, position, 
-                                      index, &index_size, stack);
+                                      index, &index_size, rec_size, stack, list);
                         removed_amount++;
-                        free_rec(r);
                     }   
+                    
+                    free_rec(r);
                 }
             }
         }
@@ -647,24 +643,36 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
         is_there_id = -1;
     }
 
-    //tranfere a estrutura da stack para o arquivo
-    if(type_file == 1) write_stack(bin_file, stack); 
-    //else
+    //tranfere a estrutura da stack/linked list para o arquivo
+    if(removed_amount != 0){
+        if(type_file == 1)
+            write_stack(bin_file, stack); 
+        else{
+            //print_list(list);
+            write_list(bin_file, list);
+        }
 
-    //print_index_table(index, index_size, type_file);
-    //Reabre o arquivo de indice para ser reescrito e exclui o conteudo anterior
-    index_file = fopen(name_index, "w+b");
-    write_index(index_file, index, index_size, type_file);
+        fclose(index_file);
      
-    //atualiza o numero de registros removidos
-    att_numRecRem(bin_file, 1, type_file, removed_amount);  
+        //print_index_table(index, index_size, type_file);
+        //Reabre o arquivo de indice para ser reescrito e exclui o conteudo anterior
+        index_file = fopen(name_index, "w+b");
+        write_index(index_file, index, index_size, type_file);
+        
+        update_status(index_file); 
+        fclose(index_file);
+    
+        //atualiza o numero de registros removidos
+        att_numRecRem(bin_file, 1, type_file, removed_amount);  
+    }
+     
     
     update_status(bin_file);
-    update_status(index_file); 
     
     free_index_array(index);
-    fclose(index_file);
     free_stack(stack);
+    free_list(list);
+    free_rec(r);
     free_header(h);
     return 1;
 }

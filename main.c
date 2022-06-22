@@ -172,7 +172,8 @@ int main(){
                 printf("Falha no processamento do arquivo."); 
             else{
                 fclose(bin_file);
-
+                bin_file = NULL;
+                
                 binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);
             }
@@ -180,13 +181,13 @@ int main(){
         case 7:;
             
             //read_word(name, stdin);;
-            char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice5.bin";
+            char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice6.bin";
             
             bin_file = fopen(name2, "rb");
             
             int size = 0;
-            INDEX* index= read_index_file(bin_file, &size, 1);
-            print_index_table(index, size, 1);
+            INDEX* index= read_index_file(bin_file, &size, 2);
+            print_index_table(index, size, 2);
     }
 
     if(bin_file != NULL) 

@@ -19,7 +19,7 @@ int print_index_file(FILE* index_file, int type_file);
 int print_index_table(INDEX* index, int index_size, int type_file);
 
 /*  Libera o espaco alocado para um vetor de indices */
-int free_index_array(INDEX* index);
+void free_index_array(INDEX* index);
 
 /*  Atualiza um vetor de indice, atualizando ou excluindo determinado registro
     Caso haja a exclusao da posicao 'mid', ocorre um swap entre 'mid' e 'end' 
@@ -43,4 +43,4 @@ int recover_rrn(INDEX* index, int id, int index_size, int type_file, int* rrn, l
 INDEX* read_index_file(FILE* index_file, int* index_size, int type_file);
 
 /*  Ordena o vetor de indice */
-void sort_id_indexes(INDEX* array, int array_size);
+void sort_id_index(INDEX* array, int array_size);
