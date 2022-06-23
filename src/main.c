@@ -25,9 +25,9 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
-#include"useful.h"
-#include"record.h"
-#include"index.h"
+#include"../headers/useful.h"
+#include"../headers/record.h"
+#include"../headers/index.h"
 
 int main(){
 
@@ -87,7 +87,7 @@ int main(){
             
             break;
 
-        case 3:;     // SELECT .. FROM .. WHERE
+        case 3:     // SELECT .. FROM .. WHERE
             read_word(name_bin, stdin);
             bin_file = fopen(name_bin, "rb");
 
@@ -130,7 +130,7 @@ int main(){
 
             free_rec(r1);  
             break;
-        case 5: ;
+        case 5:     //CREATE ID INDEX
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
             
@@ -156,7 +156,7 @@ int main(){
 
             break;  
         
-        case 6:  ;
+        case 6:     //DELETE ... WHERE
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
 
@@ -182,16 +182,16 @@ int main(){
                 binarioNaTela(name_index_bin);
             }
             break;
-        case 7:;
+        case 7:     // INSERT .. INTO
+
+            break;
+        case 8:;
             
             //read_word(name, stdin);;
-            char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice6.bin";
+            //char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice6.bin";
             
-            bin_file = fopen(name2, "rb");
-            
-            int size = 0;
-            INDEX* index= read_index_file(bin_file, &size, 2);
-            print_index_table(index, size, 2);
+            int valor = 0;
+            read_int_field(stdin, &valor);
     }
 
     if(bin_file != NULL) 

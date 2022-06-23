@@ -1,3 +1,8 @@
 {
-    "makefile.extensionOutputFolder": "./.vscode"
+    "makefile.extensionOutputFolder": "./.vscode",
+    "files.associations": {
+        "header.h": "c",
+        "index.h": "c",
+        "record.h": "c"
+    }
 }

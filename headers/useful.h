@@ -1,6 +1,3 @@
-/* Returns 1 if there is a word, 0 if there isn't, or -1 if there was an error */
-int check_field(FILE* file);
-
 /* Reads an integer value from file and removes ',' after the field 
     Returns  1 if everything was correct
              0 if the field is empty

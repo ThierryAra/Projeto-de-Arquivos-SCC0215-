@@ -1,11 +1,11 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include"useful.h"
-#include"header.h"
-#include"record.h" 
-#include"index.h"
-#include"list_stack.h"
+#include"../headers/useful.h"
+#include"../headers/header.h"
+#include"../headers/record.h" 
+#include"../headers/index.h"
+#include"../headers/list_stack.h"
 
 int read_item_csv(FILE* csv_file, RECORD* r);
 void jump_header(FILE* file, int type_file);
@@ -33,6 +33,9 @@ int sum_vars(RECORD* r, int initial_sum);
 /*  Realiza uma busca parametrizada em bin_file */
 RECORD* parameterized_search(FILE* bin_file, HEADER* header, char** fields,
                              int n, int type_file, int* rec_size);
+
+/*  Le um registro corrente da entrda FILE (campos separados por ',' ou ' ') */
+int read_rec_input(FILE* file, RECORD* r);
 
 struct record{
     char removed;
@@ -85,7 +88,7 @@ int create_table(FILE* csv_file, FILE* bin_file, int type_file){
     }
 
     int record_size = 0;
-    while(read_item_csv(csv_file, r) > 0){        
+    while(read_rec_input(csv_file, r) > 0){        
         if(type_file == 1){
             record_size = sum_vars(r, 19);
             write_item(bin_file, r, header, 1, record_size);
@@ -269,44 +272,44 @@ RECORD* parameterized_search(
     return NULL;
 }
 
-int read_item_csv(FILE* csv_file, RECORD* r){
-    if(csv_file == NULL || r == NULL)
+int read_rec_input(FILE* file, RECORD* r){
+    if(file == NULL || r == NULL)
         return -2;
         
     char c;
     
     //there is always an id and is != 0
-    if(read_int_field(csv_file, &(r->id)) == -1)
+    if(read_int_field(file, &(r->id)) == -1)
         return -1;
     
-    if(read_int_field(csv_file, &r->year) == -1)
+    if(read_int_field(file, &r->year) == -1)
         r->year = -1;
     
-    if(read_char_field(r->city, csv_file) < 1)   
+    if(read_char_field(r->city, file) < 1)   
         r->city_size = 0;
     else
         r->city_size = strlen(r->city);
    
-    if(read_int_field(csv_file, &r->amount) == -1)
+    if(read_int_field(file, &r->amount) == -1)
         r->amount = -1;
 
-    if(read_char_field(r->abbreviation, csv_file) < 1)
+    if(read_char_field(r->abbreviation, file) < 1)
         strcpy(r->abbreviation, "$$");
     
-    if(read_char_field(r->brand, csv_file) < 1)
+    if(read_char_field(r->brand, file) < 1)
         r->brand_size = 0;
     else
         r->brand_size = strlen(r->brand);
     
-    if(read_char_field(r->model, csv_file) < 1)
+    if(read_char_field(r->model, file) < 1)
         r->model_size = 0;
     else
         r->model_size = strlen(r->model);
 
     //removes '\n'
-    c = fgetc(csv_file);
+    c = fgetc(file);
     if(c != '\n')
-        ungetc(c, csv_file);
+        ungetc(c, file);
 
     return 1;
 }

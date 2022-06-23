@@ -1,9 +1,9 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include"header.h"
-#include"record.h"
-#include"useful.h"
-#include"index.h"
+#include"../headers/header.h"
+#include"../headers/record.h"
+#include"../headers/useful.h"
+#include"../headers/index.h"
 
 INDEX* read_data_file(FILE* bin_file, int* id_index_size, int type_file);
 

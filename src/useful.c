@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include"useful.h"
+#include"../headers/useful.h"
 
 int remove_header_csv(FILE* file_csv){
     char c;
@@ -13,24 +13,34 @@ int remove_header_csv(FILE* file_csv){
     return 1;
 }
 
-int check_field(FILE* file){
+/*  Returns 1 if there is a word/number or 0 if there isn't 
+    mode: if 1 -> read number                            */
+int check_field(FILE* file, int mode){
     char c = fgetc(file);
     //checks if the field is null
     if(c == ',' || c == '\n' || c == '\r' || c == EOF) 
         return -1;
     else{
-        ungetc(c, file);
+        if(mode){
+            char null_string[5];
+            if(c == 'N'){
+                fscanf(file, "%s", null_string);
+                return -1;
+            }
+            else
+                ungetc(c, file);
+        }
         return 1;
     }
 }
 
 int read_int_field(FILE* file, int* value){
-    if(check_field(file) == -1)
+    if(check_field(file, 1) == -1)
         return -1;
     
     fscanf(file, "%d", value);
     
-    //remove ','
+    //remove ',' or ' ' between fields
     char c; fscanf(file, "%c", &c);
     return 1;
 }
@@ -39,7 +49,7 @@ int read_char_field(char* string, FILE* file){
     char c = 0;
     int i = 0;
 
-    if(check_field(file) == -1)
+    if(check_field(file, 0) == -1)
         return -1;
 
     c = fgetc(file);
@@ -48,9 +58,12 @@ int read_char_field(char* string, FILE* file){
         string[i] = c;
         i++;
         c = fgetc(file);
-    }while(c != ',' && c != '\r' && c != '\n' && c != EOF);
+    }while(c != ',' && c != '\r' && c != '\n' && c != EOF && c != ' ');
 
     string[i]  = '\0';
+
+    if(strcmp(string, "NULO") == 0)
+        return -1;
 
     return 1;
 }

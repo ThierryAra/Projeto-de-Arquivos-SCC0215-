@@ -1,8 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include"header.h"
-#include"record.h"
+#include"../headers/header.h"
+#include"../headers/record.h"
 
 HEADER* create_header(){
     HEADER* header = malloc(sizeof(HEADER));

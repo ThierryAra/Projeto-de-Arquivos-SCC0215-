@@ -1,9 +1,9 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include"record.h"
-#include"index.h"
-#include"header.h"
-#include"list_stack.h"
+#include"../headers/record.h"
+#include"../headers/index.h"
+#include"../headers/header.h"
+#include"../headers/list_stack.h"
 
 /*
     Atuliza o campo numRecRem do cabecalho do arquivo, tanto para

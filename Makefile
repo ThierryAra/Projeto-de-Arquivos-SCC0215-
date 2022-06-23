@@ -1,5 +1,5 @@
-objects = main.c record.c useful.c header.c index.c list_stack.c
-headers = record.h useful.h header.h index.h list_stack.h
+objects = src/main.c src/record.c src/useful.c src/header.c src/index.c src/list_stack.c
+headers = headers/record.h headers/useful.h headers/header.h headers/index.h headers/list_stack.h
 executable = run
 
 all:
@@ -12,8 +12,8 @@ valgrind: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_copy: all
-	cp -fR arquivos/antes/binario7.bin .
-	cp -fR arquivos/antes/indice7.bin .
+	cp -fR ../arquivos/antes/binario7.bin .
+	cp -fR ../arquivos/antes/indice7.bin .
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all -s ./$(executable)
 
 valgrind_lab: all
