@@ -18,6 +18,10 @@
     ERROR           -> RETURNS -2
     INEXISTENT DATA -> RETURNS -1
 */
+#define INEXISTENT_DATA -1
+#define ERROR -2
+#define SUCESS 1
+
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
@@ -56,12 +60,12 @@ int main(){
             }else    
                 printf("Falha no processamento do arquivo.");
             
-            if(res == 1 && bin_file != NULL){
+            if(res == SUCESS && bin_file != NULL){
                 fclose(bin_file);
                 binarioNaTela(name_bin);
             }
 
-            if(res < 1)
+            if(res != SUCESS)
                 printf("Falha no processamento do arquivo.");
 
             if(csv_file != NULL) fclose(csv_file);  
@@ -78,7 +82,7 @@ int main(){
             }else    
                 printf("Falha no processamento do arquivo.");
 
-            if(res == -2)
+            if(res == ERROR)
                 printf("Falha no processamento do arquivo.");
             
             break;
@@ -101,9 +105,9 @@ int main(){
             }else    
                 printf("Falha no processamento do arquivo.");
 
-            if(res == -2)
+            if(res == ERROR)
                 printf("Falha no processamento do arquivo.");
-            else if(res == 0)
+            else if(res == INEXISTENT_DATA)
                 printf("Registro inexistente.");
 
             free_array_fields(array, n);
@@ -117,9 +121,9 @@ int main(){
             bin_file = fopen(name_bin, "rb");
             
             res = search_rrn(type_file, bin_file, rrn, r1);
-            if(res == -2)
+            if(res == ERROR)
                 printf("Falha no processamento do arquivo."); 
-            else if(res == -1)
+            else if(res == INEXISTENT_DATA)
                 printf("Registro inexistente.");
             else
                 print_record(r1);
@@ -140,7 +144,7 @@ int main(){
             }else    
                 printf("Falha no processamento do arquivo.");
 
-            if(res < 0)
+            if(res != SUCESS)
                 printf("Falha no processamento do arquivo."); 
             else{
                 //print_index_file(bin_index_file, 2);
@@ -168,7 +172,7 @@ int main(){
             }else    
                 printf("Falha no processamento do arquivo.");
 
-            if(res < 0)
+            if(res != SUCESS)
                 printf("Falha no processamento do arquivo."); 
             else{
                 fclose(bin_file);

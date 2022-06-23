@@ -143,6 +143,7 @@ void free_list(LIST* list){
     }
 }
 
+/*  Adiciona um elemento na lista, de forma sequencial */
 void add_list(LIST* list, long int BOS, int rec_size, long int next_BOS){
     list->r_list[list->rec_amount].BOS = BOS;
     list->r_list[list->rec_amount].rec_size = rec_size;
