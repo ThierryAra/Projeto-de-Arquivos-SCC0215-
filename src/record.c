@@ -570,7 +570,7 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
 
     //Lista ligada e Pilha que servirao de auxilio para as estruturas de exclusao
     STACK* stack = NULL;
-    LIST* list   = NULL;
+    LIST*  list  = NULL;
 
     //Aloca espaco para apenas uma das estruturas
     if(type_file == 1){
@@ -610,7 +610,7 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
             //buscando o registro no vetor de indice e atribui sua localizacao
             //a rrn ou BOS
             position = recover_rrn(index, atoi(fields[is_there_id+1]), 
-                              index_size, type_file, &rrn, &BOS);
+                                   index_size, type_file, &rrn, &BOS);
             
             //se existe, compara-se os outros campos de busca com o registro
             if(position > 0){

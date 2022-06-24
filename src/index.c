@@ -45,6 +45,7 @@ int create_index_id(FILE* bin_file, FILE* index_file, int type_file){
     
     write_index(index_file, index, index_size, type_file);
 
+    update_status(index_file);
     return 1;
 }
 

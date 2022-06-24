@@ -159,10 +159,8 @@ void add_list(LIST* list, long int BOS, int rec_size, long int next_BOS){
 }
 
 void read_list(FILE* bin_file, LIST* list){
-    if(bin_file == NULL){
-        printf("ARQUIVO NULOOOOOOOOOOOOOOOOO\n");
+    if(bin_file == NULL)
         return;
-    }
 
     fseek(bin_file, 1, SEEK_SET);
 
@@ -234,10 +232,9 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size){
 }
 
 void print_list(LIST* list){
-    if(list == NULL){
-        printf("LISTA VAZIAAAAAAAA!");
+    if(list == NULL)
         return;
-    }
+    
 
     int actual = list->begin;
 

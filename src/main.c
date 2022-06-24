@@ -185,7 +185,7 @@ int main(){
         case 7:     // INSERT .. INTO
 
             break;
-        case 8:;
+        case 8:;    //UPDATE .. ---
             
             //read_word(name, stdin);;
             //char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice6.bin";
