@@ -12,9 +12,9 @@ valgrind: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_copy: all
-	cp -fR arquivos/antes/binario9.bin .
-	cp -fR arquivos/antes/indice9.bin .
-	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all -s ./$(executable)
+	cp -fR arquivos/antes/binario8.bin .
+	cp -fR arquivos/antes/indice8.bin .
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_lab: all
 	cp -fR /mnt/c/Users/12681094/Documents/Projeto-de-Aquivos-SCC0215-/arquivos/antes/binario5.bin .
@@ -22,9 +22,9 @@ valgrind_lab: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all  ./$(executable)
 
 zip:
-	zip thierry.zip $(objects) $(headers) $(bin) Makefile 
+	zip thierry.zip $(objects) $(headers) Makefile 
 
 git: 
 	git add .
-	git commit -m "Mexendo na insercao"
+	git commit -m "Mexendo na remocao"
 	git push

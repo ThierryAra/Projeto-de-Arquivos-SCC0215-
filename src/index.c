@@ -223,7 +223,7 @@ void insert_index(INDEX* index, int index_size, int id, int rrn, long int BOS){
     if(rrn != 0)
         index[index_size].rrn = rrn;
     else
-        index[index_size].rrn = rrn;
+        index[index_size].BOS = BOS;
 }
 
 void update_id_index(

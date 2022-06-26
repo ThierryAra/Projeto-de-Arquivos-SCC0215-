@@ -21,27 +21,26 @@ int check_field(FILE* file, int mode){
     if(c == ',' || c == '\n' || c == '\r' || c == EOF) 
         return -1;
     else{
-        if(mode){
+        if(mode == 1){
             char null_string[5];
             if(c == 'N'){
                 fscanf(file, "%s", null_string);
                 return -1;
-            }
-            else
+            }else
                 ungetc(c, file);
-        }
+        }else
+            ungetc(c, file);
+        
         return 1;
     }
 }
 
-int read_int_field(FILE* file, int* value, int mode){
+int read_int_field(FILE* file, int* value){
     if(check_field(file, 1) == -1)
         return -1;
     
-    printf("%d \n", mode);
-    if(mode == 1) fscanf(file, "%d", value); // .txt
-    else if(mode == 2) fread(&value, 1, sizeof(int), file); // .bin
-    printf("%d \n", *value);
+    fscanf(file, "%d", value);
+    
     //remove ',' or ' ' between fields
     char c; fscanf(file, "%c", &c);
     return 1;
@@ -57,23 +56,25 @@ int read_char_field(char* string, FILE* file){
     c = fgetc(file);
     if(c == '"')
         c = fgetc(file);
-
+    
+    
     do{
         string[i] = c;
+        
+        if(i == 3){
+            string[i+1] = '\0';
+            if(strcmp(string, "NULO") == 0){
+                c = fgetc(file);
+                return -1;           
+            }
+        }
+
         i++;
         c = fgetc(file);
-    }while(c != ',' && c != '\r' && c != '\n' && c != EOF && c != ' ');
+    }while(c != ',' && c != '\r' && c != '\n' && c != EOF && c != '"');
 
-    if(string[i-1] == '"')
-        string[i-1] = '\0';
-    else
-        string[i]   = '\0';
-
-    printf("%s\n", string);
-
-    if(strcmp(string, "NULO") == 0)
-        return -1;
-
+    c = fgetc(file);
+    string[i] = '\0';
     return 1;
 }
 

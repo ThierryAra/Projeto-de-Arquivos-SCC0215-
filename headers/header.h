@@ -23,11 +23,8 @@ typedef struct header{
 /*  Allocates space for a header and returns it */
 HEADER* create_header();
 
-/*  Free the stored space for header
-    Returns:
-             1 if run correctly
-            -2 if any parameter is null */
-int free_header(HEADER* h);
+/*  Free the stored space for header  */
+void free_header(HEADER* h);
 
 /*  Write the header to the binary file so that it depends on
     type_file parameter (1 -> file1 or 2 -> file2)
@@ -51,3 +48,5 @@ char update_status(FILE* bin_file);
 int check_status(FILE* bin_file);
 
 int ignore_header(HEADER* header, FILE* bin_file, int type_file);
+
+int update_header(FILE* bin_file, HEADER* h, int type_file, int next_RRN, long int next_BOS);

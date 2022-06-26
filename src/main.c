@@ -162,7 +162,6 @@ int main(){
 
             int delete_amount = 0;
             scanf("%d", &delete_amount);
-
             bin_file = fopen(name_bin, "r+b");
 
             if(strcmp(type_file, "tipo1") == 0){
@@ -187,7 +186,7 @@ int main(){
             read_word(name_index_bin, stdin);
 
             int insertion_amount = 0;
-            scanf("%d", &insertion_amount);
+            scanf("%d\r\n", &insertion_amount);
 
             bin_file = fopen(name_bin, "r+b");
 

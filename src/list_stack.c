@@ -89,22 +89,30 @@ void read_stack(FILE* bin_file, STACK* stack){
     fseek(bin_file, 1, SEEK_SET);
     fread(&rrn, 1, sizeof(int), bin_file);
     
+    //inicializando o topo
+    if(rrn != -1)
+        stack->begin = 0;
+    
     char c = 0;
     NODE_stack node;
     node.rrn = rrn;
     
     while(node.rrn != -1){
+        //printf("node -> %d + ", node.rrn);
         jump_to_record(bin_file, node.rrn, 0);
         fseek(bin_file, 1, SEEK_CUR);
         fread(&next_rrn, 1, sizeof(int), bin_file);
 
         //adicionando o no na pilha
-        node.next = next_rrn;
+        node.next = stack->rec_amount+1;
+        //printf("next %d\n", node.next);
         stack->r_stack[stack->rec_amount++] = node;
 
         //buscando o proximo no
         node.rrn = next_rrn;
     }
+
+    stack->r_stack[stack->rec_amount-1].next = -1;
 }
 
 void add_stack(STACK* stack, int rrn){
@@ -113,12 +121,12 @@ void add_stack(STACK* stack, int rrn){
 
     //printf("ADICIONADO NA STACK %d [%d]\n", rrn, stack->rec_amount);
     NODE_stack node_stack;
-    node_stack.rrn = rrn;
-    stack->r_stack[stack->rec_amount].next = stack->begin;
+    node_stack.rrn  = rrn;
+    node_stack.next = stack->begin;
 
     //Adicionando o novo rrn e atualizando o topo
+    stack->begin = stack->rec_amount;
     stack->r_stack[stack->rec_amount++] = node_stack;
-    stack->begin = stack->rec_amount - 1;
 }
 
 int write_stack(FILE* bin_file, STACK* stack){
@@ -132,7 +140,7 @@ int write_stack(FILE* bin_file, STACK* stack){
 
     NODE_stack old_node;
     old_node.next = 0;
-    
+        
     //Adiciona a pilha a estrutura dos registros excluidos no arquivo
     while(stack->rec_amount != 1){
         old_node = node;
@@ -153,12 +161,19 @@ int write_stack(FILE* bin_file, STACK* stack){
 void print_stack(STACK* stack){
     int i = 0;
 
-    for (i = 0; i < stack->rec_amount; i++)
-        printf("%d | ", stack->r_stack[i].rrn);
+    NODE_stack node = stack->r_stack[stack->begin];
+
+    while(node.next != -1){
+        printf("%d | ", node.rrn);
+        node = stack->r_stack[node.next];
+    }
+
+    printf("%d \n", node.rrn);
 }
 
 int remove_from_stack(STACK* stack){
     if(stack->rec_amount == 0){
+        printf("pilha vazia\n");
         return -1;
     }
 
@@ -166,10 +181,12 @@ int remove_from_stack(STACK* stack){
     return 1;
 }
 
-int return_stack_top(STACK* stack){
-    return stack->r_stack[stack->begin].rrn;
+int return_stack_top(STACK* stack){  
+    if(stack->begin != -1)
+        return stack->r_stack[stack->begin].rrn;
+    else
+        return -1;
 }
-
 
 //-------------------------------LIST
 struct node_list{
@@ -189,7 +206,7 @@ LIST* create_list(int list_size){
 
     list->rec_amount = 0;
     list->r_list     = malloc(list_size*sizeof(NODE_list));
-
+    list->begin      = -1;
     return list; 
 }
 
@@ -268,7 +285,7 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size){
     
     // Loop para buscar a posicao ideal para adicionar o novo registro 
     //na lista ordenada a partir do rec_size
-    while(actual_node != -1 && list->r_list[actual_node].rec_size > rec_size){
+    while(actual_node != -1 && list->r_list[actual_node].rec_size >= rec_size){
         last_node = actual_node;
         
         //proximo no da lista
@@ -291,8 +308,10 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size){
 }
 
 void print_list(LIST* list){
-    if(list == NULL)
+    if(list->rec_amount == 0){
+        printf("LISTA VAZIA\n");
         return;
+    }
     
 
     int actual = list->begin;
@@ -304,36 +323,48 @@ void print_list(LIST* list){
 }
 
 int write_list(FILE* bin_file, LIST* list){
-    if(bin_file == NULL && list == NULL)
+    if(list->rec_amount == 0)
         return -1;
-
+    
+    
     fseek(bin_file, 1, SEEK_SET);
-    
-    //se ha apenas um elemento, basta atualizar o topo da lista
-    if(list->rec_amount == 1){
-        fwrite(&list->r_list[0].BOS, 1, sizeof(long int), bin_file);
-        return 1;
-    }
-
     // loop control
-    int i = 0;
+    NODE_list node = list->r_list[list->begin];
+
+    //Atualizando o topo
+    fwrite(&node.BOS, 1, sizeof(long int), bin_file);
     
-    NODE_list node_list = list->r_list[list->begin];
+    printf("\nTAMANHO %d\n", node.rec_size);
+    print_list(list);
+
     //Adiciona todos os registros removidos da lista no arquivo de dados
-    while(i < list->rec_amount){
-        fseek(bin_file, node_list.BOS, SEEK_SET);
+    while(node.next != -1){
+        printf("%ld\n",node.BOS);
+        fseek(bin_file, node.BOS, SEEK_SET);
         //marca como removido
         fwrite("1", 1, sizeof(char), bin_file);
+
+        if(node.next != -1)
+            node = list->r_list[node.next];
+            
         //adiciona o nextBOS
-        fseek(bin_file, sizeof(int), SEEK_CUR);
-        
-        if(node_list.next != -1){
-            fwrite(&list->r_list[node_list.next].BOS, 1, sizeof(long int), bin_file);
-            node_list = list->r_list[node_list.next];
-        }
-        i++;
+        fseek(bin_file, sizeof(int), SEEK_CUR);  
+        fwrite(&node.BOS, 1, sizeof(long int), bin_file);
     }
 
+    fseek(bin_file, node.BOS, SEEK_SET);
+    fwrite("1", 1, sizeof(char), bin_file);
+
+    return 1;
+}
+
+int remove_from_list(LIST* list){
+    if(list->rec_amount == 0){
+        printf("lista vazia\n");
+        return -1;
+    }
+
+    list->begin = list->r_list[list->begin].next;
     return 1;
 }
 

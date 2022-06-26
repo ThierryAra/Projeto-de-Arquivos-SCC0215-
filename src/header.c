@@ -26,12 +26,11 @@ HEADER* create_header(){
     return header;
 }
 
-int free_header(HEADER* h){
-    if(h == NULL)
-        return -2;
-
-    free(h); h = NULL;
-    return 1;
+void free_header(HEADER* h){
+    if(h != NULL){
+        free(h); 
+        h = NULL;
+    }
 }
 
 int write_header(HEADER* h, FILE* bin_file, int type_file){
@@ -105,4 +104,20 @@ int check_status(FILE* bin_file){
         return 1;
     else 
         return -1;
+}
+
+int update_header(FILE* bin_file, HEADER* h, int type_file, int next_RRN, long int next_BOS){
+    update_status(bin_file);
+
+    if(type_file == 1){
+        fwrite(&h->top_rrn, 1, sizeof(int), bin_file);
+        fseek(bin_file, 174, SEEK_SET);
+        fwrite(&next_RRN, 1, sizeof(int), bin_file);
+    }else{
+        fwrite(&h->top_BOS, 1, sizeof(int), bin_file);
+        fseek(bin_file, 178, SEEK_SET);
+        fwrite(&next_BOS, 1, sizeof(long int), bin_file);
+    }
+
+    fwrite(&h->numRegRem, 1, sizeof(int), bin_file);
 }

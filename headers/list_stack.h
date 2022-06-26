@@ -59,3 +59,5 @@ int write_list(FILE* bin_file, LIST* list);
 void print_list(LIST* list);
 
 int return_list_top(LIST* list, int* size);
+
+int remove_from_list(LIST* list);
