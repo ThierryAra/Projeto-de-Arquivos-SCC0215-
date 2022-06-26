@@ -191,8 +191,8 @@ INDEX* read_index_file(FILE* index_file, int* id_index_size, int type_file){
     
 
     *id_index_size = i;
-    if(*id_index_size != size) 
-        id_index = realloc(id_index, sizeof(INDEX)*i);
+    /* if(*id_index_size != size) 
+        id_index = realloc(id_index, sizeof(INDEX)*i); */
     
     sort_id_index(id_index, *id_index_size);
     return id_index;
@@ -218,22 +218,34 @@ void free_index_array(INDEX* id_index){
         free(id_index);
 }
 
+void insert_index(INDEX* index, int index_size, int id, int rrn, long int BOS){
+    index[index_size].id = id;
+    if(rrn != 0)
+        index[index_size].rrn = rrn;
+    else
+        index[index_size].rrn = rrn;
+}
+
 void update_id_index(
-    INDEX* id_index, int mid, 
-    int type_file, int mode, int end
+    INDEX* id_index, 
+    int position, int type_file, 
+    int mode, int end, 
+    int rrn, long int BOS
 ){
     if(mode == 1){ //excluindo
-        id_index[mid].id = -1;
+        id_index[position].id = -1;
         
         if(type_file == 1)
-            id_index[mid].rrn  = -1;
+            id_index[position].rrn  = -1;
         else
-            id_index[mid].BOS = -1;
+            id_index[position].BOS = -1;
 
         //swap
-        INDEX aux = id_index[mid];
-        id_index[mid] = id_index[end];
+        INDEX aux = id_index[position];
+        id_index[position] = id_index[end];
         id_index[end] = aux;
+    }if(mode == 2){ //inserindo 
+        //id_index[position].id = new_id;
     }
 }
 

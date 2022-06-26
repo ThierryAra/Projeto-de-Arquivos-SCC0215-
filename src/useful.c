@@ -34,12 +34,14 @@ int check_field(FILE* file, int mode){
     }
 }
 
-int read_int_field(FILE* file, int* value){
+int read_int_field(FILE* file, int* value, int mode){
     if(check_field(file, 1) == -1)
         return -1;
     
-    fscanf(file, "%d", value);
-    
+    printf("%d \n", mode);
+    if(mode == 1) fscanf(file, "%d", value); // .txt
+    else if(mode == 2) fread(&value, 1, sizeof(int), file); // .bin
+    printf("%d \n", *value);
     //remove ',' or ' ' between fields
     char c; fscanf(file, "%c", &c);
     return 1;
@@ -53,14 +55,21 @@ int read_char_field(char* string, FILE* file){
         return -1;
 
     c = fgetc(file);
-    
+    if(c == '"')
+        c = fgetc(file);
+
     do{
         string[i] = c;
         i++;
         c = fgetc(file);
     }while(c != ',' && c != '\r' && c != '\n' && c != EOF && c != ' ');
 
-    string[i]  = '\0';
+    if(string[i-1] == '"')
+        string[i-1] = '\0';
+    else
+        string[i]   = '\0';
+
+    printf("%s\n", string);
 
     if(strcmp(string, "NULO") == 0)
         return -1;

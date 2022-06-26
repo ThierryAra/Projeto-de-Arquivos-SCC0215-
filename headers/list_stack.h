@@ -9,6 +9,7 @@ void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity);
 
 //-------------------------------STACK
 typedef struct stack STACK;
+typedef struct node_stack NODE_stack;
 
 /*  Aloca espaco para uma pilha, que armazenara os arquivos exluidos para
     arquivos de registros tipo 1                                       */
@@ -16,6 +17,9 @@ STACK* create_stack(int stack_size);
 
 /*  Libera o espaco alocado para uma pilha */
 void free_stack(STACK* stack);
+
+/*  Le toda a estrutura da pilha presente em bin_file */
+void read_stack(FILE* bin_file, STACK* stack);
 
 /*  Busca o topo da pilha em bin_file */
 void read_stack_top(FILE* bin_file, STACK* stack);
@@ -28,9 +32,13 @@ int write_stack(FILE* bin_file, STACK* stack);
 
 void print_stack(STACK* stack);
 
+int return_stack_top(STACK* stack);
+
+int remove_from_stack(STACK* stack);
+
 //-------------------------------LIST
 typedef struct list LIST;
-typedef struct node NODE;
+typedef struct node_list NODE_list;
 
 /*  Aloca espaco para uma lista ligada, que armazenara os arquivos 
     exluidos para arquivos de registros tipo 2                  */
@@ -49,3 +57,5 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size);
 int write_list(FILE* bin_file, LIST* list);
 
 void print_list(LIST* list);
+
+int return_list_top(LIST* list, int* size);

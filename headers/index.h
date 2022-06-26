@@ -27,7 +27,7 @@ void free_index_array(INDEX* index);
             mid  = posicao onde esta localizado o registro buscado 
             end  = ultima posicao nao nula do vetor de indices
             mode = 1 -> Exclusao de regsitro; 2 -> Adicao de registro        */
-void update_id_index(INDEX* index, int mid, int type_file, int mode, int end);
+void update_id_index(INDEX* index, int mid, int type_file, int mode, int end, int rrn, long int BOS);
 
 /*  Atraves de uma busca binaria no vetor de indice, busca por 'id' no vetor e
     retorna o RRN/BOS (a depender de type_file) do 'id' no registro         
@@ -44,3 +44,5 @@ INDEX* read_index_file(FILE* index_file, int* index_size, int type_file);
 
 /*  Ordena o vetor de indice */
 void sort_id_index(INDEX* array, int array_size);
+
+void insert_index(INDEX* index, int index_size, int id, int rrn, long int BOS);

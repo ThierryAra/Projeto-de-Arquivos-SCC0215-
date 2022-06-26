@@ -25,7 +25,7 @@ int next_register(FILE* bin_file, int type_file);
     Returns 1 if there is no error
            -1 if the parameters are corrupted */
 int write_item(FILE* bin_file, RECORD* r, HEADER* header, 
-                int type_file, int record_size);
+                int type_file, int record_size, int update);
 
 /*  Soma o campos de tamanho variavel ao tamanho do registro */
 int sum_vars(RECORD* r, int initial_sum);
@@ -35,7 +35,7 @@ RECORD* parameterized_search(FILE* bin_file, HEADER* header, char** fields,
                              int n, int type_file, int* rec_size);
 
 /*  Le um registro corrente da entrda FILE (campos separados por ',' ou ' ') */
-int read_rec_input(FILE* file, RECORD* r);
+int read_rec_input(FILE* file, RECORD* r, int mode);
 
 struct record{
     char removed;
@@ -88,13 +88,13 @@ int create_table(FILE* csv_file, FILE* bin_file, int type_file){
     }
 
     int record_size = 0;
-    while(read_rec_input(csv_file, r) > 0){        
+    while(read_rec_input(csv_file, r, 1) > 0){        
         if(type_file == 1){
             record_size = sum_vars(r, 19);
-            write_item(bin_file, r, header, 1, record_size);
+            write_item(bin_file, r, header, 1, record_size, 0);
         }else if (type_file == 2){
             record_size = sum_vars(r, 22);
-            write_item(bin_file, r, header, 2, record_size);
+            write_item(bin_file, r, header, 2, record_size, 0);
         }
     }
 
@@ -272,52 +272,76 @@ RECORD* parameterized_search(
     return NULL;
 }
 
-int read_rec_input(FILE* file, RECORD* r){
+int read_rec_input(FILE* file, RECORD* r, int mode){
     if(file == NULL || r == NULL)
         return -2;
         
     char c;
     
+    int r_size = 27;
     //there is always an id and is != 0
-    if(read_int_field(file, &(r->id)) == -1)
+    if(read_int_field(file, &(r->id), mode) == -1)
         return -1;
+    else
+        printf("%d ",r->id);
     
-    if(read_int_field(file, &r->year) == -1)
+    if(read_int_field(file, &r->year, mode) == -1)
         r->year = -1;
-    
+    else
+        printf("%d ",r->id);
+
     if(read_char_field(r->city, file) < 1)   
         r->city_size = 0;
-    else
+    else{
         r->city_size = strlen(r->city);
+        r_size += r->city_size + 5;
+        printf("%s ", r->city);
+    }
    
-    if(read_int_field(file, &r->amount) == -1)
+    if(read_int_field(file, &r->amount, mode) == -1)
         r->amount = -1;
+    else
+        printf("%d ",r->id);
 
     if(read_char_field(r->abbreviation, file) < 1)
         strcpy(r->abbreviation, "$$");
+    else
+        printf("%c%c ",r->abbreviation[0], r->abbreviation[1]);
     
     if(read_char_field(r->brand, file) < 1)
         r->brand_size = 0;
-    else
+    else{
         r->brand_size = strlen(r->brand);
-    
+        r_size += r->brand_size + 5;
+        printf("%s ", r->brand);
+    }
+
     if(read_char_field(r->model, file) < 1)
         r->model_size = 0;
-    else
+    else{
         r->model_size = strlen(r->model);
+        r_size += r->model_size + 5;
+        printf("%s ", r->model);
+    }
 
     //removes '\n'
     c = fgetc(file);
     if(c != '\n')
         ungetc(c, file);
 
-    return 1;
+    return r_size;
 }
 
-int write_item(FILE* bin_file, RECORD* r, HEADER* header, int type_file, int record_size){
+int write_item(
+    FILE* bin_file, 
+    RECORD* r, HEADER* header, 
+    int type_file, int record_size, 
+    int update
+){
     if(bin_file == NULL || r == NULL)
         return -2;
 
+    int bytes_written = 0;
     int i = -1;
     long int li = -1;
 
@@ -343,22 +367,32 @@ int write_item(FILE* bin_file, RECORD* r, HEADER* header, int type_file, int rec
         fwrite(&r->city_size, 1, sizeof(int), bin_file);
         fwrite(&header->codC5, 1, sizeof(char), bin_file);
         fwrite(r->city, r->city_size, sizeof(char), bin_file);
+        bytes_written += r->city_size + 5;
     }
     if(r->brand_size > 0){
         fwrite(&r->brand_size, 1, sizeof(int), bin_file);
         fwrite(&header->codC6, 1, sizeof(char), bin_file);
         fwrite(r->brand, r->brand_size, sizeof(char), bin_file);
+        bytes_written += r->brand_size + 5;
     }
     if(r->model_size > 0){
         fwrite(&r->model_size, 1, sizeof(int), bin_file);
         fwrite(&header->codC7, 1, sizeof(char), bin_file);
         fwrite(r->model, r->model_size, sizeof(char), bin_file);
+        bytes_written += r->model_size + 5;
     }
 
     //ensures that each record is 97 bytes long
     if(type_file == 1)
         for(int i = record_size; i < STATIC_REC_SIZE; i++)
             fwrite("$", 1, sizeof(char), bin_file);
+    else{
+        bytes_written += 27;
+        //Atualiza o espaco que sobrou com lixo
+        if(update == 1)
+            for (int i = bytes_written; i < record_size; i++)
+                fwrite("$", 1, sizeof(char), bin_file);  
+    }
 
     return 1;
 }
@@ -549,7 +583,7 @@ int delete_record(
     
     //atualiza o vetor de indices
     (*index_size)--;
-    update_id_index(index, position, type_file, 1, *index_size);
+    update_id_index(index, position, type_file, 1, *index_size, -1, -1);
     sort_id_index(index, *index_size);
 }   
 
@@ -691,3 +725,87 @@ void jump_to_record(FILE* file, int rrn, long int BOS){
         fseek(file, BOS, SEEK_SET);
 }
 
+int insert_into(FILE* bin_file, char* name_index, int n, int type_file){
+    FILE* index_file = fopen(name_index, "r+b");
+    if(bin_file == NULL || index_file == NULL)
+        return -2;
+    if(!check_status(bin_file) && !check_status(index_file))
+        return -2;
+    
+    //Atualiza o staus dos arquivos como inconsistente para realizar mudancas
+    update_status(bin_file);
+    update_status(index_file);
+
+    int index_size = 0;
+    INDEX* index = read_index_file(index_file, &index_size, type_file);
+
+    //Lista ligada e Pilha que servirao de auxilio para as estruturas de exclusao
+    STACK* stack = NULL;
+    LIST*  list  = NULL;
+
+    //Aloca espaco para apenas uma das estruturas
+    if(type_file == 1){
+        stack = create_stack(500);
+        read_stack(bin_file, stack);
+    }else{
+        list = create_list(500);
+        read_list(bin_file, list);
+    }
+
+    RECORD* r = create_record();
+    HEADER* h = create_header();
+    
+    int r_size = 0, next_RRN = 0;
+    long int next_BOS = 0;
+
+    if(type_file == 1){
+        fseek(bin_file, 174, SEEK_SET);
+        fread(&next_RRN, 1, sizeof(int), bin_file);
+    }
+    else{
+        fseek(bin_file, 178, SEEK_SET);
+        fread(&next_BOS, 1, sizeof(long int), bin_file);
+    }
+
+    int stack_top = 0, list_top = 0;
+    int list_size = 0;
+    int rrn = -1;
+    long int BOS = -1;
+
+    for(int i = 0; i < n; i++){
+        r_size = read_rec_input(bin_file, r, 2);
+        print_record(r);
+        /* if(type_file == 1){
+            stack_top = return_stack_top(stack);
+            if(stack_top != -1){
+                jump_to_record(bin_file, stack_top, 0);
+                remove_from_stack(stack);
+            }
+            else{
+                jump_to_record(bin_file, next_RRN++, 0);
+                next_RRN++;
+            }
+
+            insert_index(index, index_size, r->id, rrn, 0);
+        }
+        else{
+            list_top = return_list_top(list, &list_size);
+            if(list_top != -1 && r_size <= list_size){
+                jump_to_record(bin_file, 0, list_top);
+            }
+            else{
+                jump_to_record(bin_file, 0, next_BOS);
+                next_BOS += r_size;
+            }
+        }
+
+        write_item(bin_file, r, h, type_file, r_size, 1);
+        
+        index_size++;
+        sort_id_index(index, index_size);
+
+        r_size = 0; */
+    }
+
+    return 1;
+}

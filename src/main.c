@@ -183,7 +183,30 @@ int main(){
             }
             break;
         case 7:     // INSERT .. INTO
+            read_word(name_bin, stdin);
+            read_word(name_index_bin, stdin);
 
+            int insertion_amount = 0;
+            scanf("%d", &insertion_amount);
+
+            bin_file = fopen(name_bin, "r+b");
+
+            if(strcmp(type_file, "tipo1") == 0)
+                res = insert_into(bin_file, name_index_bin, insertion_amount, 1);
+            else if(strcmp(type_file, "tipo2") == 0)
+                res = insert_into(bin_file, name_index_bin, insertion_amount, 2);
+            else
+                printf("Falha no processamento do arquivo.");
+
+            if(res != SUCESS)
+                printf("Falha no processamento do arquivo."); 
+            else{
+                fclose(bin_file);
+                bin_file = NULL;
+                
+                binarioNaTela(name_bin);
+                binarioNaTela(name_index_bin);
+            }
             break;
         case 8:;    //UPDATE .. ---
             
@@ -191,7 +214,7 @@ int main(){
             //char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice6.bin";
             
             int valor = 0;
-            read_int_field(stdin, &valor);
+            //read_int_field(stdin, &valor);
     }
 
     if(bin_file != NULL) 

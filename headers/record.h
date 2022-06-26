@@ -62,3 +62,5 @@ int delete_where(FILE* bin_file, char* index_file, int n, int type_file);
 /*  A partir do RRN/BOS, da um fseek diretamente para a posicao.
     Se rrn e BOS sao nao nulos, apenas o fseek do rrn sera realizado           */
 void jump_to_record(FILE* file, int rrn, long int BOS);
+
+int insert_into(FILE* bin_file, char* name_index, int n, int type_file);

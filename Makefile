@@ -12,8 +12,8 @@ valgrind: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_copy: all
-	cp -fR arquivos/antes/binario7.bin .
-	cp -fR arquivos/antes/indice7.bin .
+	cp -fR arquivos/antes/binario9.bin .
+	cp -fR arquivos/antes/indice9.bin .
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all -s ./$(executable)
 
 valgrind_lab: all
@@ -26,5 +26,5 @@ zip:
 
 git: 
 	git add .
-	git commit -m "Mexendo no indice"
+	git commit -m "Mexendo na insercao"
 	git push

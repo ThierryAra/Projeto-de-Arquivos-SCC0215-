@@ -35,17 +35,23 @@ void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity){
 }
 
 //-------------------------------STACK
+struct node_stack{
+    int rrn;
+    int next;
+};
+
 struct stack{
     int rec_amount;
-    int* r_stack;
+    int begin;
+    NODE_stack* r_stack;
 };
 
 STACK* create_stack(int stack_size){
     STACK* stack = malloc(sizeof(STACK));
 
     stack->rec_amount = 0;
-    stack->r_stack    = malloc(stack_size*sizeof(int));
-
+    stack->r_stack    = malloc(stack_size*sizeof(NODE_stack));
+    stack->begin      = -1;
     return stack;
 }
 
@@ -63,10 +69,41 @@ void read_stack_top(FILE* bin_file, STACK* stack){
     int top_stack = -1;
 
     fread(&top_stack, 1, sizeof(int), bin_file);
+    NODE_stack node_stack;
+
+    node_stack.rrn  = top_stack;
+    node_stack.next = -1;
 
     if(top_stack != -1){
-        stack->r_stack[0] = top_stack;
+        stack->r_stack[0] = node_stack;
+        stack->begin = 0;
         stack->rec_amount++;
+    }
+}
+
+void read_stack(FILE* bin_file, STACK* stack){
+    int rrn = -1;
+    int next_rrn = -1;
+
+    //Lendo o topo da pilha
+    fseek(bin_file, 1, SEEK_SET);
+    fread(&rrn, 1, sizeof(int), bin_file);
+    
+    char c = 0;
+    NODE_stack node;
+    node.rrn = rrn;
+    
+    while(node.rrn != -1){
+        jump_to_record(bin_file, node.rrn, 0);
+        fseek(bin_file, 1, SEEK_CUR);
+        fread(&next_rrn, 1, sizeof(int), bin_file);
+
+        //adicionando o no na pilha
+        node.next = next_rrn;
+        stack->r_stack[stack->rec_amount++] = node;
+
+        //buscando o proximo no
+        node.rrn = next_rrn;
     }
 }
 
@@ -75,45 +112,67 @@ void add_stack(STACK* stack, int rrn){
         return;
 
     //printf("ADICIONADO NA STACK %d [%d]\n", rrn, stack->rec_amount);
-    stack->r_stack[stack->rec_amount++] = rrn;
+    NODE_stack node_stack;
+    node_stack.rrn = rrn;
+    stack->r_stack[stack->rec_amount].next = stack->begin;
+
+    //Adicionando o novo rrn e atualizando o topo
+    stack->r_stack[stack->rec_amount++] = node_stack;
+    stack->begin = stack->rec_amount - 1;
 }
 
 int write_stack(FILE* bin_file, STACK* stack){
     if(stack->rec_amount == 0)
         return -1;
 
-    int rrn = stack->r_stack[stack->rec_amount - 1];
+    NODE_stack node = stack->r_stack[stack->begin];
     //atualiza o topo da stack
     fseek(bin_file, 1, SEEK_SET);
-    fwrite(&rrn, 1, sizeof(int), bin_file);
+    fwrite(&node.rrn, 1, sizeof(int), bin_file);
 
-    int old_rrn = 0;
+    NODE_stack old_node;
+    old_node.next = 0;
+    
     //Adiciona a pilha a estrutura dos registros excluidos no arquivo
-    while(stack->rec_amount > 0){
-        //O proxRRN do registro ja estara -1
-        if(stack->rec_amount == 1)
-            break;
+    while(stack->rec_amount != 1){
+        old_node = node;
+        if(node.next != -1)
+            node = stack->r_stack[node.next];
 
-        rrn     = stack->r_stack[stack->rec_amount - 1];
-        old_rrn = stack->r_stack[stack->rec_amount - 2];
-
-        jump_to_record(bin_file, rrn, 0);
+        jump_to_record(bin_file, old_node.rrn, 0);
         fwrite("1", 1, sizeof(char), bin_file);
-        fwrite(&old_rrn, 1, sizeof(int), bin_file);
+        fwrite(&node.rrn, 1, sizeof(int), bin_file);
 
         stack->rec_amount--;
     }
+
+    jump_to_record(bin_file, node.rrn, 0);
+    fwrite("1", 1, sizeof(char), bin_file);
 }
 
 void print_stack(STACK* stack){
     int i = 0;
 
     for (i = 0; i < stack->rec_amount; i++)
-        printf("%d | ", stack->r_stack[i]);
+        printf("%d | ", stack->r_stack[i].rrn);
 }
 
+int remove_from_stack(STACK* stack){
+    if(stack->rec_amount == 0){
+        return -1;
+    }
+
+    stack->begin = stack->r_stack[stack->begin].next;
+    return 1;
+}
+
+int return_stack_top(STACK* stack){
+    return stack->r_stack[stack->begin].rrn;
+}
+
+
 //-------------------------------LIST
-struct node{
+struct node_list{
     long int BOS;
     int rec_size;
     int next;
@@ -122,14 +181,14 @@ struct node{
 struct list{
     int rec_amount;
     int begin;
-    NODE* r_list;
+    NODE_list* r_list;
 };
 
 LIST* create_list(int list_size){
     LIST* list = malloc(sizeof(LIST));
 
     list->rec_amount = 0;
-    list->r_list     = malloc(list_size*sizeof(NODE));
+    list->r_list     = malloc(list_size*sizeof(NODE_list));
 
     return list; 
 }
@@ -189,13 +248,13 @@ void read_list(FILE* bin_file, LIST* list){
 }
 
 void add_sorted_to_list(LIST* list, long int BOS, int rec_size){
-    NODE node;
-    node.rec_size = rec_size;
-    node.BOS      = BOS;
-    node.next     = -1;
+    NODE_list node_list;
+    node_list.rec_size = rec_size;
+    node_list.BOS      = BOS;
+    node_list.next     = -1;
 
     if(list->rec_amount == 0){
-        list->r_list[0] = node;
+        list->r_list[0] = node_list;
         list->rec_amount++;
         list->begin = 0;
         return;
@@ -221,13 +280,13 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size){
     if(i == list->rec_amount){          //insercao no fim
         list->r_list[last_node].next = list->rec_amount;
     }else if(i == 0){                   //insercao no inicio
-        node.next = list->begin;
+        node_list.next = list->begin;
     }else{                              //insercao no meio
-        node.next = actual_node;
+        node_list.next = actual_node;
         list->r_list[last_node].next = list->rec_amount;
     }
 
-    list->r_list[list->rec_amount] = node;
+    list->r_list[list->rec_amount] = node_list;
     list->rec_amount++;
 }
 
@@ -259,21 +318,26 @@ int write_list(FILE* bin_file, LIST* list){
     // loop control
     int i = 0;
     
-    NODE node = list->r_list[list->begin];
+    NODE_list node_list = list->r_list[list->begin];
     //Adiciona todos os registros removidos da lista no arquivo de dados
     while(i < list->rec_amount){
-        fseek(bin_file, node.BOS, SEEK_SET);
+        fseek(bin_file, node_list.BOS, SEEK_SET);
         //marca como removido
         fwrite("1", 1, sizeof(char), bin_file);
         //adiciona o nextBOS
         fseek(bin_file, sizeof(int), SEEK_CUR);
         
-        if(node.next != -1){
-            fwrite(&list->r_list[node.next].BOS, 1, sizeof(long int), bin_file);
-            node = list->r_list[node.next];
+        if(node_list.next != -1){
+            fwrite(&list->r_list[node_list.next].BOS, 1, sizeof(long int), bin_file);
+            node_list = list->r_list[node_list.next];
         }
         i++;
     }
 
     return 1;
+}
+
+int return_list_top(LIST* list, int* size){
+    *size = list->r_list[list->begin].rec_size;
+    return list->r_list[list->begin].BOS;
 }
