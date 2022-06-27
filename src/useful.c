@@ -105,16 +105,35 @@ void scan_quote_strings(char* string){
     char c = 0;
     int i = 0;
 
-    c = getchar();   
+    int is_there = 0;
+    
+    c = getchar();  
+    if(c == '"')
+        is_there = 1;
+     
     //removes unnecessary characters before the word
     while(c == '\n' || c == '\r' || c == '"' || c == ' ')
         c = getchar();
     
     do{
         string[i] = c;
+
+        if(i == 3){
+            string[i+1] = '\0';
+            if(strcmp(string, "NULO") == 0){
+                c = getchar();
+                return;           
+            }
+        }
+
+        if(is_there == 0)
+            if(c == ' ')
+                break;
+        
+
         i++;
         c = getchar();
-    }while(c != '\n' && c != '\r' && c != '"' && c != EOF && c != ' ');
+    }while(c != '\n' && c != '\r' && c != '"' && c != EOF);
 
     string[i]  = '\0';
 }
@@ -135,12 +154,16 @@ char** create_array_fields(int n){
 char** read_search_fields(int n, int* is_there_id){
     char** array = create_array_fields(n);
             
-    //{(campo_i, valor_i), ...}
+    //{(field_i, value_i), ...}
     for (int i = 0; i < n*2; i++){
         read_word(array[i], stdin);
         if(strcmp(array[i], "id") == 0)
             *is_there_id = i;
         scan_quote_strings(array[++i]);
+        
+        //printf("STRING -> %s |", array[i]);
+        if(strcmp(array[i], "NULO") == 0)
+            array[i][0] = '\0';
     }
 
     return array;

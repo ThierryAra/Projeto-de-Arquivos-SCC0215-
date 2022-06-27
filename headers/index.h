@@ -2,47 +2,48 @@
 
 typedef struct index INDEX;
 
-/*  Le um arquivo de dados e cria um arquivo de indices por ID compativel
+/*  Read a data file and create an index file by matching ID
     RETURN:
-            -2 caso os parametros sejam invalidos
-            -1 caso nao haja espaco suficiente para alocar um vetor de indices
+            -2 if the parameters are invalid
+            -1 if there is not enough space to allocate a vector of indices
              1 sucefull                                                     */
 int create_index_id(FILE* bin_file, FILE* index_file, int type_file);
 
-/*  Escreve todo o conteudo de index em index_file */
+/*  Write the entire contents of index to index_file */
 void write_index(FILE* index_file, INDEX* index, int index_size, int type_file);
 
-/*  Exibe todos os dados de um arquivo de indice */
+/*  Displays all data from an index file */
 int print_index_file(FILE* index_file, int type_file);
 
-/*  Exibe todos os dados de um vetor de indices  */
+/*  Displays all data from an index vector  */
 int print_index_table(INDEX* index, int index_size, int type_file);
 
-/*  Libera o espaco alocado para um vetor de indices */
+/*  Frees the space allocated for an array of indices */
 void free_index_array(INDEX* index);
 
-/*  Atualiza um vetor de indice, atualizando ou excluindo determinado registro
-    Caso haja a exclusao da posicao 'mid', ocorre um swap entre 'mid' e 'end' 
+/*  Updates an index vector, updating or deleting a given record
+    If the 'mid' position is excluded, there is a swap between 'mid' and 'end' 
     @PARAM:
-            mid  = posicao onde esta localizado o registro buscado 
-            end  = ultima posicao nao nula do vetor de indices
-            mode = 1 -> Exclusao de regsitro; 2 -> Adicao de registro        */
-void update_id_index(INDEX* index, int mid, int type_file, int mode, int end, int rrn, long int BOS);
+            mid  = position where the searched record is located 
+            end  = last non-null position of the indices vector
+            mode = 1 -> Exclusion 2 -> Addition 3 ->  Update              */
+void update_id_index(INDEX* index, int mid, int type_file, int mode, 
+                    int end, int rrn, long int BOS, int new_id);
 
-/*  Atraves de uma busca binaria no vetor de indice, busca por 'id' no vetor e
-    retorna o RRN/BOS (a depender de type_file) do 'id' no registro         
+/*  Through a binary search in the index vector, search for 'id' in the vector and
+    returns the RRN/BOS (depending on type_file) of the 'id' in the registry       
     RETURN: 
-            -1 caso 'id' nao seja encontrado
-            posicao do 'id' no vetor de indice                              */
+            -1 if 'id' is not found
+            position of the 'id' in the index vector                              */
 int recover_rrn(INDEX* index, int id, int index_size, int type_file, int* rrn, long int* BOS);
 
-/*  Le um arquivo de indice e o transfere para um vetor de tamanho 'index_size' 
+/*  Read an index file and transfer it to an array of size 'index_size'
     RETURN:
-            NULL caso o arquivo nao possa ser aberto ou nao haja espaco para alocacao   
-            INDEX* ponteiro para o vetor alocado                                   */
+            NULL if the file cannot be opened or there is no space for allocation   
+            INDEX* pointer to allocated vector                                   */
 INDEX* read_index_file(FILE* index_file, int* index_size, int type_file);
 
-/*  Ordena o vetor de indice */
+/*  Sort the index vector */
 void sort_id_index(INDEX* array, int array_size);
 
 void insert_index(INDEX* index, int index_size, int id, int rrn, long int BOS);

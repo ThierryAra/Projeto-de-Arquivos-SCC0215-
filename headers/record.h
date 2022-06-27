@@ -45,22 +45,22 @@ int print_record(RECORD* r);
 
 //-------------------------TRABALHO 2-------------------------------//
 /*
-    Pula exatamente 1 registo na leitura do arquivo binario
-    RETURN: -1 caso type_file seja invalido              */
+    Skip exactly 1 record when reading the binary file
+    RETURN: -1 if type_file is invalid              */
 int next_register(FILE* bin_file, int type_file);
 
-/*
-    Recebe da entrada k duplas (campo, valor), 'n' vezes, que serao buscados
-    a partir do arquivo de indices (caso a busca seja por id) ou sequencialmente
-    em bin_file, caso um registro corresponda aos campos apresentados ele sera
-    virtualmente excluido.
+/*  Receives from the input k doubles (field, value), 'n' times, that will be 
+    searched from the index file (if the search is by id) or sequentially in 
+    bin_file, if a record matches the presented fields it will be virtually deleted.
     RETURN:
-            -2 se os arquivos estao corrompidos ou nao existem
-             1 sucesso                                                         */
+            -2 if the files are corrupted or do not exist
+             1 success                                                         */
 int delete_where(FILE* bin_file, char* index_file, int n, int type_file);
 
-/*  A partir do RRN/BOS, da um fseek diretamente para a posicao.
-    Se rrn e BOS sao nao nulos, apenas o fseek do rrn sera realizado           */
+/*  From RRN/BOS, give a fseek directly to the position.
+    If rrn and BOS are nonzero, only the fseek of rrn will be performed           */
 void jump_to_record(FILE* file, int rrn, long int BOS);
 
 int insert_into(FILE* bin_file, char* name_index, int n, int type_file);
+
+int update_where(FILE* bin_file, char* name_index, int n, int type_file);

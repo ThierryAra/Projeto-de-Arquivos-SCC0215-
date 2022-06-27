@@ -6,11 +6,11 @@
 #include"../headers/list_stack.h"
 
 /*
-    Atuliza o campo numRecRem do cabecalho do arquivo, tanto para
-    remocoes como para adicoes de registros
+    Validates the 'numRecRem' field of the file header, both for
+    removals and additions of records
         mode
-             1 -> Remocao
-             2 -> Adicao                                       */
+             1 -> Removal
+             2 -> Addition                                       */
 void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity){
     int numRecRem = 0;
     if(type_file == 1){
@@ -21,13 +21,13 @@ void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity){
         fread(&numRecRem, 1, sizeof(int), bin_file);
     }
 
-    //Removendo um registro
+    //Removing a record
     if(mode == 1)
         if(numRecRem <= 0)
             numRecRem = quantity;
         else
             numRecRem += quantity;
-    else //Adicionando um registro
+    else //Adding a record
         numRecRem -= quantity;
         
     fseek(bin_file, -sizeof(int), SEEK_CUR);
@@ -85,11 +85,11 @@ void read_stack(FILE* bin_file, STACK* stack){
     int rrn = -1;
     int next_rrn = -1;
 
-    //Lendo o topo da pilha
+    //Reading the top of the stack
     fseek(bin_file, 1, SEEK_SET);
     fread(&rrn, 1, sizeof(int), bin_file);
     
-    //inicializando o topo
+    //initializing the top
     if(rrn != -1)
         stack->begin = 0;
     
@@ -103,16 +103,17 @@ void read_stack(FILE* bin_file, STACK* stack){
         fseek(bin_file, 1, SEEK_CUR);
         fread(&next_rrn, 1, sizeof(int), bin_file);
 
-        //adicionando o no na pilha
+        //adding the node on the stack
         node.next = stack->rec_amount+1;
         //printf("next %d\n", node.next);
         stack->r_stack[stack->rec_amount++] = node;
 
-        //buscando o proximo no
+        //seeking the next node
         node.rrn = next_rrn;
     }
 
-    stack->r_stack[stack->rec_amount-1].next = -1;
+    if(stack->rec_amount != 0)
+        stack->r_stack[stack->rec_amount-1].next = -1;
 }
 
 void add_stack(STACK* stack, int rrn){
@@ -124,7 +125,7 @@ void add_stack(STACK* stack, int rrn){
     node_stack.rrn  = rrn;
     node_stack.next = stack->begin;
 
-    //Adicionando o novo rrn e atualizando o topo
+    //Adding the new rrn and updating the top
     stack->begin = stack->rec_amount;
     stack->r_stack[stack->rec_amount++] = node_stack;
 }
@@ -134,14 +135,14 @@ int write_stack(FILE* bin_file, STACK* stack){
         return -1;
 
     NODE_stack node = stack->r_stack[stack->begin];
-    //atualiza o topo da stack
+    //updates the top of the stack
     fseek(bin_file, 1, SEEK_SET);
     fwrite(&node.rrn, 1, sizeof(int), bin_file);
 
     NODE_stack old_node;
     old_node.next = 0;
         
-    //Adiciona a pilha a estrutura dos registros excluidos no arquivo
+    //Adds the structure of the deleted records in the file to the stack
     while(stack->rec_amount != 1){
         old_node = node;
         if(node.next != -1)
@@ -219,13 +220,13 @@ void free_list(LIST* list){
     }
 }
 
-/*  Adiciona um elemento na lista, de forma sequencial */
+/*  Adds an element to the list, sequentially */
 void add_list(LIST* list, long int BOS, int rec_size, long int next_BOS){
     list->r_list[list->rec_amount].BOS = BOS;
     list->r_list[list->rec_amount].rec_size = rec_size;
     
-    // Como eles ja estao no arquivo ordenadamente, caso exista um proxBOS,
-    //ele estara na proxima posicao do vetor
+    // Since they are already in the file in order, if there is a proxBOS,
+    // it will be at the next position of the vector
     if(next_BOS != -1)
         list->r_list[list->rec_amount].next = list->rec_amount + 1;
     else
@@ -247,14 +248,14 @@ void read_list(FILE* bin_file, LIST* list){
     long int next_BOS = 0;
 
     if(BOS != -1){
-        // Enquanto houver registros removidos ja salvos no arquivo, o loop se mantem
+        // As long as there are removed records already saved in the file, the loop continues
         while(BOS != -1){
-            //Busca os dados do registro
+            // Searches the register data
             fseek(bin_file, BOS+1, SEEK_SET);
             fread(&rec_size, 1, sizeof(int), bin_file);
             fread(&next_BOS, 1, sizeof(long int), bin_file);
 
-            //adiciona na lista
+            //add to the list
             add_list(list, BOS, rec_size, next_BOS);
 
             BOS = next_BOS;
@@ -269,42 +270,37 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size){
     node_list.rec_size = rec_size;
     node_list.BOS      = BOS;
     node_list.next     = -1;
-
-    if(list->rec_amount == 0){
-        list->r_list[0] = node_list;
-        list->rec_amount++;
-        list->begin = 0;
-        return;
-    }
-
     // loop control
     int i = 0;
 
     int actual_node = list->begin;
     int last_node   = -1;
     
-    // Loop para buscar a posicao ideal para adicionar o novo registro 
-    //na lista ordenada a partir do rec_size
-    while(actual_node != -1 && list->r_list[actual_node].rec_size >= rec_size){
+    // Loop to search for the optimal position to add the new record 
+    // in the list sorted from rec_size
+    while(actual_node != -1 && list->r_list[actual_node].rec_size > rec_size){
         last_node = actual_node;
         
-        //proximo no da lista
+        //next node in the list
         actual_node = list->r_list[actual_node].next;
         i++;
     }
     
     
-    if(i == list->rec_amount){          //insercao no fim
+    if(actual_node == list->begin){    //insertion at the beginning
+        if(list->rec_amount != 0)
+            node_list.next = list->begin;
+
+        list->begin = list->rec_amount;
+    }else if(actual_node == -1){       //insertion at the end
         list->r_list[last_node].next = list->rec_amount;
-    }else if(i == 0){                   //insercao no inicio
-        node_list.next = list->begin;
-    }else{                              //insercao no meio
+    }else{                             //insertion at the mid
         node_list.next = actual_node;
         list->r_list[last_node].next = list->rec_amount;
     }
 
     list->r_list[list->rec_amount] = node_list;
-    list->rec_amount++;
+    (list->rec_amount)++;
 }
 
 void print_list(LIST* list){
@@ -312,7 +308,6 @@ void print_list(LIST* list){
         printf("LISTA VAZIA\n");
         return;
     }
-    
 
     int actual = list->begin;
 
@@ -320,34 +315,30 @@ void print_list(LIST* list){
         printf("%d [%ld] | ", list->r_list[actual].rec_size, list->r_list[actual].BOS);
         actual = list->r_list[actual].next;
     }
+    printf("\n\n");
 }
 
 int write_list(FILE* bin_file, LIST* list){
     if(list->rec_amount == 0)
         return -1;
     
-    
     fseek(bin_file, 1, SEEK_SET);
     // loop control
     NODE_list node = list->r_list[list->begin];
 
-    //Atualizando o topo
+    //Updating the top
     fwrite(&node.BOS, 1, sizeof(long int), bin_file);
-    
-    printf("\nTAMANHO %d\n", node.rec_size);
-    print_list(list);
 
-    //Adiciona todos os registros removidos da lista no arquivo de dados
+    //Adds all records removed from the list to the data file
     while(node.next != -1){
-        printf("%ld\n",node.BOS);
         fseek(bin_file, node.BOS, SEEK_SET);
-        //marca como removido
-        fwrite("1", 1, sizeof(char), bin_file);
 
+        //marks as removed
+        fwrite("1", 1, sizeof(char), bin_file);
         if(node.next != -1)
             node = list->r_list[node.next];
             
-        //adiciona o nextBOS
+        //add nextBOS
         fseek(bin_file, sizeof(int), SEEK_CUR);  
         fwrite(&node.BOS, 1, sizeof(long int), bin_file);
     }
@@ -368,7 +359,9 @@ int remove_from_list(LIST* list){
     return 1;
 }
 
-int return_list_top(LIST* list, int* size){
+long int return_list_top(LIST* list, int* size){
+    if(list->begin == -1)
+        return -1;
     *size = list->r_list[list->begin].rec_size;
     return list->r_list[list->begin].BOS;
 }

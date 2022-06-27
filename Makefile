@@ -12,8 +12,8 @@ valgrind: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_copy: all
-	cp -fR arquivos/antes/binario8.bin .
-	cp -fR arquivos/antes/indice8.bin .
+	cp -fR arquivos/antes/binario17.bin .
+	cp -fR arquivos/antes/indice17.bin .
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_lab: all

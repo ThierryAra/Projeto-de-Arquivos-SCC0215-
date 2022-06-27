@@ -1,33 +1,33 @@
 #include<stdio.h>
 
-/*  Atuliza o campo numRecRem do cabecalho do arquivo, tanto para
-    remocoes como para adicoes de registros
+/*  Updates the 'numRecRem' field of the file header, both for
+    removals and additions of records
         mode:
-             1 -> Remocao
-             2 -> Adicao                                       */
+             1 -> Removal
+             2 -> Addition                                       */
 void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity);
 
 //-------------------------------STACK
 typedef struct stack STACK;
 typedef struct node_stack NODE_stack;
 
-/*  Aloca espaco para uma pilha, que armazenara os arquivos exluidos para
-    arquivos de registros tipo 1                                       */
+/*  Allocates space for a stack, which will store the deleted files for
+    type 1 log files                                       */
 STACK* create_stack(int stack_size);
 
-/*  Libera o espaco alocado para uma pilha */
+/*  Frees space allocated to a stack */
 void free_stack(STACK* stack);
 
-/*  Le toda a estrutura da pilha presente em bin_file */
+/*  Read entire stack structure present in bin_file */
 void read_stack(FILE* bin_file, STACK* stack);
 
-/*  Busca o topo da pilha em bin_file */
+/*  Fetch top of stack in bin_file */
 void read_stack_top(FILE* bin_file, STACK* stack);
 
-/*  Adiciona um elemento identificado pelo rrn na stach */
+/*  Adds an element identified by rrn in the stack */
 void add_stack(STACK* stack, int rrn);
 
-/*  Transfere a stack para o arquivo bin_file */
+/*  Transfer the stack to the 'bin_file' file */
 int write_stack(FILE* bin_file, STACK* stack);
 
 void print_stack(STACK* stack);
@@ -40,24 +40,24 @@ int remove_from_stack(STACK* stack);
 typedef struct list LIST;
 typedef struct node_list NODE_list;
 
-/*  Aloca espaco para uma lista ligada, que armazenara os arquivos 
-    exluidos para arquivos de registros tipo 2                  */
+/*  Allocates space for a linked list, which will store the excluded files 
+    files for type 2 log files                 */
 LIST* create_list(int list_size);
 
-/*  Libera o espaco alocado para uma lista ligada */
+/*  Frees up space allocated for a linked list */
 void free_list(LIST* list);
 
-/*  Busca a estrutura da lista ja existente em bin_file */
+/*  Fetches the structure of the already existing list in bin_file */
 void read_list(FILE* bin_file, LIST* list);
 
-/*  Adiciona um elemento de tamanho 'rec_size' e ByteOffset 'BOS' na lista */
+/*  Adds an element of size 'rec_size' and ByteOffset 'BOS' to the list */
 void add_sorted_to_list(LIST* list, long int BOS, int rec_size);
 
-/*  Transfere a lista ligada para o arquivo bin_file */
+/*  Transfers the linked list to bin_file */
 int write_list(FILE* bin_file, LIST* list);
 
 void print_list(LIST* list);
 
-int return_list_top(LIST* list, int* size);
+long int return_list_top(LIST* list, int* size);
 
 int remove_from_list(LIST* list);

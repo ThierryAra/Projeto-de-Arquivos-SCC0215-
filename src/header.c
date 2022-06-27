@@ -121,3 +121,10 @@ int update_header(FILE* bin_file, HEADER* h, int type_file, int next_RRN, long i
 
     fwrite(&h->numRegRem, 1, sizeof(int), bin_file);
 }
+
+int ignore_header(FILE* bin_file, int type_file){
+    if(type_file == 1)
+        fseek(bin_file, STATIC_REC_HEADER, SEEK_SET);
+    else
+        fseek(bin_file, VARIABLE_REC_HEADER, SEEK_SET);
+}

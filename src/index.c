@@ -21,7 +21,7 @@ void write_index(FILE* index_file, INDEX* index, int index_size, int type_file){
     //control
     int i = 0;
     
-    //Percorre todas as posicoes do vetor de indices
+    //Scrolls through all positions of the index vector
     while(i < index_size){
         fwrite(&index[i].id, 1, sizeof(int), index_file);
 
@@ -45,6 +45,7 @@ int create_index_id(FILE* bin_file, FILE* index_file, int type_file){
     
     write_index(index_file, index, index_size, type_file);
 
+    free_index_array(index);
     update_status(index_file);
     return 1;
 }
@@ -59,18 +60,20 @@ INDEX* read_data_file(FILE* bin_file, int* id_index_size, int type_file){
     
     INDEX* id_index = NULL;
     
-    char removed;
-    int next_i;          //campo que deve ser ignorado
-    int id = 0, rrn = 0; //valores que serão salvos no vetor de indices
-    int i = 0;           //index do vetor
-    long int next_li;    //campo que deve ser ignorado
+    char removed;        //will check if the record is logically removed
+    int next_i;          //field that should be ignored (type 1)
+    long int next_li;    //field that should be ignored (type 2)
+    
+    int id = 0, rrn = 0; //values that will be saved in the index array
+    int i = 0;           //vector index
     
     if(type_file == 1){     
-        //Busca o maior RRN para ter o tamanho da matriz de indices
+        //Searches for the largest RRN to allocate space to the index vector
         fseek(bin_file, 174, SEEK_SET);
         fread(id_index_size, 1, sizeof(int), bin_file);
         fseek(bin_file, 4, SEEK_CUR); // jump nroRegRem
-        //Alocando espaco para a matriz 
+        
+        //Allocating space for the index vector 
         id_index = malloc(sizeof(INDEX)*(*id_index_size));
 
         while(fread(&removed, 1, sizeof(char), bin_file) != 0){
@@ -87,15 +90,15 @@ INDEX* read_data_file(FILE* bin_file, int* id_index_size, int type_file){
         
             rrn++;   
         }
+
+        *id_index_size = i;
     }else if(type_file == 2){
         long int final_BOS = 0;
         
-        //??????????
-        fseek(bin_file, 178, SEEK_SET);
-        fread(&final_BOS, 1, sizeof(long int), bin_file);
-        fseek(bin_file, 4, SEEK_CUR); // jump nroRegRem
+        HEADER* h = create_header();
+        ignore_header(bin_file, type_file);
 
-        //Alocando espaco para o vetor (tamanho inicial medio)
+        //Allocating space for the vector (initial median size)
         int size = 1100;
         id_index = malloc(sizeof(INDEX)*(size));
 
@@ -122,12 +125,14 @@ INDEX* read_data_file(FILE* bin_file, int* id_index_size, int type_file){
                 size = size + size/5;
                 id_index = realloc(id_index, sizeof(INDEX)*size);
             }
-
         }
 
-        *id_index_size = i - 1;
+        *id_index_size = i;
+
         if(*id_index_size != size)
             id_index = realloc(id_index, sizeof(INDEX)*i);
+
+        free_header(h);
     }
 
     sort_id_index(id_index, *id_index_size);
@@ -182,8 +187,8 @@ INDEX* read_index_file(FILE* index_file, int* id_index_size, int type_file){
         i++;
 
         if(i >= size){
-            //como os arquivos nao constumam ter + de 1000 registros
-            //o aumento ocorre gradativamente
+            //as the files do not usually have more than 1000 records
+            //the increase occurs gradually
             size += size + size/5;
             id_index = realloc(id_index, sizeof(INDEX)*size);
         }
@@ -220,7 +225,7 @@ void free_index_array(INDEX* id_index){
 
 void insert_index(INDEX* index, int index_size, int id, int rrn, long int BOS){
     index[index_size].id = id;
-    if(rrn != 0)
+    if(rrn != -1)
         index[index_size].rrn = rrn;
     else
         index[index_size].BOS = BOS;
@@ -230,7 +235,7 @@ void update_id_index(
     INDEX* id_index, 
     int position, int type_file, 
     int mode, int end, 
-    int rrn, long int BOS
+    int rrn, long int BOS, int new_id
 ){
     if(mode == 1){ //excluindo
         id_index[position].id = -1;
@@ -244,8 +249,18 @@ void update_id_index(
         INDEX aux = id_index[position];
         id_index[position] = id_index[end];
         id_index[end] = aux;
-    }if(mode == 2){ //inserindo 
+    }else if(mode == 2){ //inserindo 
         //id_index[position].id = new_id;
+    }else if(mode == 3){ //update
+        if(new_id != -1)
+            id_index[position].id = new_id;
+
+        if(rrn != -1 && id_index[position].rrn != rrn)
+            id_index[position].rrn = rrn;
+        
+        if(BOS != -1 && id_index[position].BOS != BOS)
+            id_index[position].BOS = BOS;
+        
     }
 }
 
@@ -254,7 +269,7 @@ int recover_rrn(
     int id, int id_index_size, 
     int type_file, int* rrn, long int* BOS
 ){  
-    //BUSCA BINARIA SIMPLES
+    //SIMPLE BINARY SEARCH
     int begin = 0;
     int end   = (id_index_size)-1;
     //printf("\n\nFIM %d id end %d\n\n",end,id_index[end].id);
@@ -264,10 +279,14 @@ int recover_rrn(
         //printf("[%d] %d [%d] | ", id_index[begin].id, id_index[mid].id, id_index[end].id);
         if(id_index[mid].id == id){
             //printf("\nACHEI O %d\n", id_index[mid].id);
-            if(type_file == 1)
+            if(type_file == 1){
                 *rrn = id_index[mid].rrn;
-            else
+                *BOS = -1;
+            }else{
+                *rrn = -1;
                 *BOS = id_index[mid].BOS;
+            }
+            //printf("ACHEI O %d EM %d POS %d\n", id_index[mid].id, id_index[mid].rrn, mid);
             return mid;   
         }
                 
@@ -279,6 +298,8 @@ int recover_rrn(
         mid = (begin + end)/2;   
     }
     
+    *BOS = -1;
+    *rrn = -1;
     return -1;
 }
 

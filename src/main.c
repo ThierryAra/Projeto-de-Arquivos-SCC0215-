@@ -8,10 +8,8 @@
  |                                                                               |
  |Authors: Gustavo Sampaio Lima (12623992) and Thierry de Souza Araujo (12681094)|
  *********************************************************************************
-  > "Primeiro Trabalho Pratico"
-  > Objective: Code that can store and retrieve data related
-    related to the vehicle fleet list in Brazil, which is maintained by Denatran. 
-    The files can have fixed or variable sizes
+  > "Segundo Trabalho Pratico"
+  > Objective: 
  ********************************************************************************/
 
 /* 
@@ -107,9 +105,10 @@ int main(){
 
             if(res == ERROR)
                 printf("Falha no processamento do arquivo.");
-            else if(res == INEXISTENT_DATA)
+            else if(res == 0)
                 printf("Registro inexistente.");
 
+            printf("res = %d\n", res);
             free_array_fields(array, n);
             break;
 
@@ -141,19 +140,20 @@ int main(){
                 res = create_index_id(bin_file, bin_index_file, 1);            
             }else if(strcmp(type_file, "tipo2") == 0){
                 res = create_index_id(bin_file, bin_index_file, 2);
-            }else    
-                printf("Falha no processamento do arquivo.");
-
-            if(res != SUCESS)
-                printf("Falha no processamento do arquivo."); 
-            else{
-                //print_index_file(bin_index_file, 2);
+            }else{
                 fclose(bin_index_file);
+                printf("Falha no processamento do arquivo.");
+            }    
+
+            fclose(bin_index_file);
+            
+            if(res != SUCESS){
+                printf("Falha no processamento do arquivo."); 
+            }else{
                 bin_index_file = NULL;
 
                 binarioNaTela(name_index_bin);
             }
-
             break;  
         
         case 6:     //DELETE ... WHERE
@@ -180,6 +180,7 @@ int main(){
                 binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);
             }
+            
             break;
         case 7:     // INSERT .. INTO
             read_word(name_bin, stdin);
@@ -207,13 +208,31 @@ int main(){
                 binarioNaTela(name_index_bin);
             }
             break;
-        case 8:;    //UPDATE .. ---
-            
-            //read_word(name, stdin);;
-            //char name2[200] = "/home/thierry/Documentos/USP/C/3_semestre/Arquivos/Projeto-de-Aquivos-SCC0215-/arquivos/depois/indice6.bin";
-            
-            int valor = 0;
-            //read_int_field(stdin, &valor);
+        case 8:;    //UPDATE .. WHERE
+            read_word(name_bin, stdin);
+            read_word(name_index_bin, stdin);
+
+            int update_amount = 0;
+            scanf("%d\r\n", &update_amount);
+
+            bin_file = fopen(name_bin, "r+b");
+
+            if(strcmp(type_file, "tipo1") == 0)
+                res = update_where(bin_file, name_index_bin, update_amount, 1);
+            else if(strcmp(type_file, "tipo2") == 0)
+                res = update_where(bin_file, name_index_bin, update_amount, 2);
+            else
+                printf("Falha no processamento do arquivo.");
+
+            if(res != SUCESS)
+                printf("Falha no processamento do arquivo."); 
+            else{
+                fclose(bin_file);
+                bin_file = NULL;
+                
+                binarioNaTela(name_bin);
+                binarioNaTela(name_index_bin);
+            }
     }
 
     if(bin_file != NULL) 
