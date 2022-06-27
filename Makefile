@@ -1,6 +1,7 @@
 objects = src/main.c src/record.c src/useful.c src/header.c src/index.c src/list_stack.c
 headers = headers/record.h headers/useful.h headers/header.h headers/index.h headers/list_stack.h
 executable = run
+file = 17
 
 all:
 	gcc $(objects) -o $(executable) -g
@@ -12,14 +13,9 @@ valgrind: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 valgrind_copy: all
-	cp -fR arquivos/antes/binario17.bin .
-	cp -fR arquivos/antes/indice17.bin .
+	cp -fR arquivos/antes/binario$(file).bin .
+	cp -fR arquivos/antes/indice$(file).bin .
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
-
-valgrind_lab: all
-	cp -fR /mnt/c/Users/12681094/Documents/Projeto-de-Aquivos-SCC0215-/arquivos/antes/binario9.bin .
-	cp -fR /mnt/c/Users/12681094/Documents/Projeto-de-Aquivos-SCC0215-/arquivos/antes/indice9.bin .
-	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all  ./$(executable)
 
 zip:
 	zip thierry.zip $(objects) $(headers) Makefile 
@@ -28,3 +24,12 @@ git:
 	git add .
 	git commit -m "Mexendo na remocao"
 	git push
+
+comp:
+	xxd binario$(file).bin > b1.my
+	xxd arquivos/depois/binario$(file).bin > b2.out
+	code --diff b1.my b2.out
+
+rm:
+	rm binario$(file).bin
+	rm indice$(file).bin

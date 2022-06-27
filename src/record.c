@@ -215,8 +215,8 @@ RECORD* parameterized_search(
     while((record_size = get_record(bin_file, r, header, type_file)) != -2){
         if(record_size == -1) // excluded register
             error = -1;
-        
-         //holds as long as the array fields are equal to r
+        //print_record(r);
+        //holds as long as the array fields are equal to r
         while (error > 0 && i < n*2){
             if(strcmp(fields[i], "id") == 0){
                 int x = atoi(fields[i + 1]);
@@ -338,11 +338,11 @@ int read_insert_data(FILE* file, RECORD* r){
     if(read_int_field(file, &r->amount) == -1)
         r->amount = -1;
 
-    char teste[5];
-    if(read_char_field(teste, file) < 1)
+    char string[5];
+    if(read_char_field(string, file) < 1)
         strcpy(r->abbreviation, "$$");
     else
-        strncpy(r->abbreviation, teste, 2);
+        strncpy(r->abbreviation, string, 2);
     
     if(read_char_field(r->city, file) < 1)   
         r->city_size = 0;
@@ -431,7 +431,7 @@ int write_item(
             fwrite("$", 1, sizeof(char), bin_file);
     }
     else{
-        bytes_written += 27;
+        bytes_written += 22;
         //Update the space left with garbage
         if(update == 1){
             for (int i = bytes_written; i < old_record_size; i++)
@@ -491,7 +491,7 @@ int read_fields_t2(FILE* bin_file, HEADER* header, RECORD* r, int* bytes_scanned
     int bytes = 0;
     char c = 0;
     while(*bytes_scanned != record_size){
-        printf("byyteS %d  [%d]\n", *bytes_scanned, record_size);
+        printf("byyteS %d  [%d] -> %ld\n", *bytes_scanned, record_size, ftell(bin_file));
 
     
         fread(&c, 1, sizeof(char), bin_file);
@@ -502,8 +502,7 @@ int read_fields_t2(FILE* bin_file, HEADER* header, RECORD* r, int* bytes_scanned
         }else
             ungetc(c, bin_file);
         
-
-        *bytes_scanned = add_str_field(bin_file, r, header);
+        *bytes_scanned += add_str_field(bin_file, r, header);
     }
 
     printf("FIM %d  [%d] %ld\n\n", *bytes_scanned, record_size, ftell(bin_file));
@@ -793,7 +792,8 @@ void insert_record(
     FILE* bin_file, HEADER* h, 
     STACK* stack, LIST* list, 
     int type_file, int* next_RRN,
-    long int* next_BOS, int rec_size,
+    long int* next_BOS, 
+    int rec_size, int old_rec_size,
     RECORD* r, INDEX* index, int* index_size
 ){
     int rrn = -1;
@@ -817,6 +817,7 @@ void insert_record(
         }
 
         insert_index(index, *index_size, r->id, rrn, -1);
+        write_item(bin_file, r, h, type_file, list_top_size, list_top_size, 1);
     }else{
         list_top = return_list_top(list, &list_top_size);
         printf("LIST TOP %ld %d [%d]\n", list_top, list_top_size, rec_size);
@@ -826,18 +827,21 @@ void insert_record(
             
             remove_from_list(list);
             h->numRegRem--;
+            write_item(bin_file, r, h, type_file, rec_size, list_top_size, 1);
         }
         else{
             BOS = *next_BOS;
             jump_to_record(bin_file, -1, *next_BOS);
-            (*next_BOS) += rec_size+5;
+            //(*next_BOS) += old_rec_size+5;
+            list_top_size = rec_size;
+            write_item(bin_file, r, h, type_file, -1, list_top_size, 0);
+            (*next_BOS) = ftell(bin_file);
         }
 
         insert_index(index, *index_size, r->id, -1, BOS);
     }
 
     printf("INSERI NA POSICAO %ld\n", ftell(bin_file));
-    write_item(bin_file, r, h, type_file, list_top_size, list_top_size, 1);
     
     (*index_size)++;
     sort_id_index(index, *index_size);
@@ -850,14 +854,14 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file){
     if(!check_status(bin_file) && !check_status(index_file))
         return -2;
     
-    fseek(index_file, 0, SEEK_SET);
+    //fseek(index_file, 0, SEEK_SET);
     //Updates file staus as inconsistent to make changes
     update_status(bin_file);
     update_status(index_file);
 
     int index_size = 0;
     INDEX* index = read_index_file(index_file, &index_size, type_file);
-
+    
     //Linked list and Stack that will help the exclusion structures
     STACK* stack = NULL;
     LIST*  list  = NULL;
@@ -896,7 +900,7 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file){
         rec_size = read_insert_data(stdin, r);
 
         insert_record(bin_file, h, stack, list, type_file, &next_RRN, 
-                     &next_BOS, rec_size, r, index, &index_size);
+                     &next_BOS, rec_size, rec_size, r, index, &index_size);
     }
 
     //rewriting the headline
@@ -1029,7 +1033,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
 
                         //Searches for the ideal place to insert the updated record
                         insert_record(bin_file, h, stack, list, type_file, &next_RRN,
-                                        &next_BOS, rec_size, r, index, &index_size);
+                                        &next_BOS, rec_size, old_rec_size, r, index, &index_size);
                     }else{
                         jump_to_record(bin_file, rrn, BOS);
                         write_item(bin_file, r, h, type_file, old_rec_size, rec_size, 1);
@@ -1054,10 +1058,12 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
             long int pos_atual = 0;
             //as long as there is a record, a parametrized search will be performed
             //for all records
-            while(fread(&c, 1, sizeof(char), bin_file) != 0){
-                ungetc(c, bin_file);
-                r = parameterized_search(bin_file, h, fields_s, amt_fields_s, 
-                                        type_file, &rec_size);
+            //while(fread(&c, 1, sizeof(char), bin_file) != 0){
+            while((r = parameterized_search(bin_file, h, fields_s, amt_fields_s, 
+                                        type_file, &rec_size)) != NULL){
+                //ungetc(c, bin_file);
+                //r = parameterized_search(bin_file, h, fields_s, amt_fields_s, 
+                //                        type_file, &rec_size);
                 pos_atual = ftell(bin_file);
                 char d;
                 //fread(&d, 1, sizeof(char), bin_file);
@@ -1092,7 +1098,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                                 printf("TINHA %d AGORA TEM %d\n", old_rec_size, rec_size);
                                 //Searches for the ideal place to insert the updated record
                                 insert_record(bin_file, h, stack, list, type_file, &next_RRN,
-                                            &next_BOS, rec_size, r, index, &index_size);
+                                            &next_BOS, rec_size, old_rec_size, r, index, &index_size);
                             }else{
                                 jump_to_record(bin_file, rrn, BOS);
                                 write_item(bin_file, r, h, type_file, rec_size, old_rec_size, 1);
@@ -1194,4 +1200,6 @@ void update_record(FILE* bin_file, RECORD* r, char** fields_u, int amt_fields, i
             r->model_size = size_str;
         }
     }
+
+
 }
