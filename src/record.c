@@ -25,7 +25,7 @@ int next_register(FILE* bin_file, int type_file);
     Returns 1 if there is no error
            -1 if the parameters are corrupted */
 int write_item(FILE* bin_file, RECORD* r, HEADER* header, 
-                int type_file, int record_size, int update);
+                int type_file, int record_size, int old_rec_size, int update);
 
 /*  Sums the variable-size fields to the record size */
 int sum_vars(RECORD* r, int initial_sum);
@@ -94,10 +94,10 @@ int create_table(FILE* csv_file, FILE* bin_file, int type_file){
     while(read_rec_input(csv_file, r) > 0){        
         if(type_file == 1){
             record_size = sum_vars(r, 19);
-            write_item(bin_file, r, header, 1, record_size, 0);
+            write_item(bin_file, r, header, 1, -1, record_size, 0);
         }else if (type_file == 2){
             record_size = sum_vars(r, 22);
-            write_item(bin_file, r, header, 2, record_size, 0);
+            write_item(bin_file, r, header, 2, -1, record_size, 0);
         }
     }
 
@@ -376,7 +376,8 @@ int read_insert_data(FILE* file, RECORD* r){
 int write_item(
     FILE* bin_file, 
     RECORD* r, HEADER* header, 
-    int type_file, int record_size, 
+    int type_file, 
+    int record_size, int old_record_size,
     int update
 ){
     if(bin_file == NULL || r == NULL)
@@ -393,7 +394,7 @@ int write_item(
     if(type_file == 1)
         fwrite(&i, 1, sizeof(int), bin_file);    
     else if(type_file == 2){
-        fwrite(&record_size, 1, sizeof(int), bin_file);
+        fwrite(&old_record_size, 1, sizeof(int), bin_file);
         fwrite(&li, 1, sizeof(long int), bin_file);
     }
 
@@ -430,10 +431,10 @@ int write_item(
             fwrite("$", 1, sizeof(char), bin_file);
     }
     else{
-        bytes_written += 22;
+        bytes_written += 27;
         //Update the space left with garbage
         if(update == 1){
-            for (int i = bytes_written; i < record_size; i++)
+            for (int i = bytes_written; i < old_record_size; i++)
                 fwrite("$", 1, sizeof(char), bin_file);  
         }
     }
@@ -444,17 +445,9 @@ int write_item(
 /*  Read and add a field of varying size on struct r
     Returns: sum of the fields read               */
 int add_str_field(FILE* bin_file, RECORD* r, HEADER* header){
-    char cod = '3';
-    fread(&cod, 1, sizeof(char), bin_file);
-    
-    if(cod == '$'){
-        return -1;
-    }else{
-        ungetc(cod, bin_file);
-    }
-
     int string_size = 0;
     fread(&string_size, 1, sizeof(int), bin_file);
+    char cod = '3';
     fread(&cod, 1, sizeof(char), bin_file);
 
     if(cod == header->codC5){
@@ -462,16 +455,19 @@ int add_str_field(FILE* bin_file, RECORD* r, HEADER* header){
         r->city_size = string_size;
         fread(r->city, r->city_size, sizeof(char), bin_file);
         r->city[string_size] = '\0';
+        printf("%s\n", r->city);
     }else if(cod == header->codC6){
         //brand (1)
         r->brand_size = string_size;
         fread(r->brand, r->brand_size, sizeof(char), bin_file);
         r->brand[string_size] = '\0';
+        printf("%s\n", r->brand);
     }else if(cod == header->codC7){
         //model (2)
         r->model_size = string_size;
         fread(r->model, r->model_size, sizeof(char), bin_file);
         r->model[string_size] = '\0';
+        printf("%s\n", r->model);
     }
 
     return string_size+5;
@@ -493,17 +489,24 @@ int read_fields_t1(FILE* bin_file, HEADER* header, RECORD* r, int* record_size){
 
 int read_fields_t2(FILE* bin_file, HEADER* header, RECORD* r, int* bytes_scanned, int record_size){
     int bytes = 0;
+    char c = 0;
     while(*bytes_scanned != record_size){
         printf("byyteS %d  [%d]\n", *bytes_scanned, record_size);
 
-        bytes = add_str_field(bin_file, r, header);
-        if(bytes == -1){
-            printf("ACHEI LIXO");
-            fseek(bin_file, record_size-(*bytes_scanned+1), SEEK_CUR);
-        }
-        *bytes_scanned += bytes;
+    
+        fread(&c, 1, sizeof(char), bin_file);
+        if(c == '$'){
+            printf("\n\nACHEI LIXO! (%c)\n\n", c);
+            fseek(bin_file, record_size-(*bytes_scanned+1), SEEK_CUR); 
+            return -1;
+        }else
+            ungetc(c, bin_file);
+        
+
+        *bytes_scanned = add_str_field(bin_file, r, header);
     }
-    printf("byyteS %d  [%d] %ld\n", *bytes_scanned, record_size, ftell(bin_file));
+
+    printf("FIM %d  [%d] %ld\n\n", *bytes_scanned, record_size, ftell(bin_file));
 
     return record_size;
 }
@@ -834,7 +837,7 @@ void insert_record(
     }
 
     printf("INSERI NA POSICAO %ld\n", ftell(bin_file));
-    write_item(bin_file, r, h, type_file, list_top_size, 1);
+    write_item(bin_file, r, h, type_file, list_top_size, list_top_size, 1);
     
     (*index_size)++;
     sort_id_index(index, *index_size);
@@ -842,12 +845,12 @@ void insert_record(
 
 int insert_into(FILE* bin_file, char* name_index, int n, int type_file){
     FILE* index_file = fopen(name_index, "r+b");
-    fseek(index_file, 0, SEEK_SET);
     if(bin_file == NULL || index_file == NULL)
         return -2;
     if(!check_status(bin_file) && !check_status(index_file))
         return -2;
     
+    fseek(index_file, 0, SEEK_SET);
     //Updates file staus as inconsistent to make changes
     update_status(bin_file);
     update_status(index_file);
@@ -942,6 +945,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
     }else{
         list = create_list(500);
         read_list(bin_file, list);
+        print_list(list);
     }
 
     RECORD* r = NULL;
@@ -1015,7 +1019,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
 
                 if(type_file == 1){
                     jump_to_record(bin_file, rrn, BOS);
-                    write_item(bin_file, r, h, type_file, rec_size, 1);
+                    write_item(bin_file, r, h, type_file, -1, rec_size, 1);
                 }else{
                     //Checks whether the record can be overwritten
                     if(rec_size > old_rec_size){
@@ -1028,7 +1032,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                                         &next_BOS, rec_size, r, index, &index_size);
                     }else{
                         jump_to_record(bin_file, rrn, BOS);
-                        write_item(bin_file, r, h, type_file, rec_size, 1);
+                        write_item(bin_file, r, h, type_file, old_rec_size, rec_size, 1);
                     }
                 }
 
@@ -1056,40 +1060,43 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                                         type_file, &rec_size);
                 pos_atual = ftell(bin_file);
                 char d;
-                fread(&d, 1, sizeof(char), bin_file);
-                printf("%ld  ERA %c [%ld]-> ",pos_atual, d, ftell(bin_file));
-                ungetc(d, bin_file);
+                //fread(&d, 1, sizeof(char), bin_file);
+                //printf("%ld  ERA %c [%ld]-> ",pos_atual, d, ftell(bin_file));
+                //ungetc(d, bin_file);
 
                 if(r != NULL){
                     //rec_size = old_rec_size;    
                     old_rec_size = rec_size;   
-                    printf("OLD RECORD: \n");
-                    print_record(r);
+                    //printf("OLD RECORD: \n");
+                    //print_record(r);
                     
                     //updates the fields
                     update_record(bin_file, r, fields_u, amt_fields_u, &rec_size);
                     
-                    printf("\nNEW RECORD: \n");
-                    print_record(r);
+                    //printf("\nNEW RECORD: \n");
+                    //print_record(r);
                     
                     pos = recover_rrn(index, r->id, index_size, type_file, &rrn, &BOS);
                     
-                    if(type_file == 1){
-                        jump_to_record(bin_file, rrn, BOS);
-                        write_item(bin_file, r, h, type_file, rec_size, 1);
-                    }else{
-                        //moving the register to a position where it fits
-                        if(rec_size > old_rec_size){
-                            //Deletes the record and adds it in another position
-                            delete_record(bin_file, type_file, index, &index_size,
-                                        stack, list, pos, rrn, BOS, old_rec_size);
-
-                            //Searches for the ideal place to insert the updated record
-                            insert_record(bin_file, h, stack, list, type_file, &next_RRN,
-                                        &next_BOS, rec_size, r, index, &index_size);
-                        }else{
+                    if(pos != -1){
+                        if(type_file == 1){
                             jump_to_record(bin_file, rrn, BOS);
-                            write_item(bin_file, r, h, type_file, rec_size, 1);
+                            write_item(bin_file, r, h, type_file, -1, rec_size, 1);
+                        }else{
+                            //moving the register to a position where it fits
+                            if(rec_size > old_rec_size){
+                                //Deletes the record and adds it in another position
+                                delete_record(bin_file, type_file, index, &index_size,
+                                            stack, list, pos, rrn, BOS, old_rec_size);
+
+                                printf("TINHA %d AGORA TEM %d\n", old_rec_size, rec_size);
+                                //Searches for the ideal place to insert the updated record
+                                insert_record(bin_file, h, stack, list, type_file, &next_RRN,
+                                            &next_BOS, rec_size, r, index, &index_size);
+                            }else{
+                                jump_to_record(bin_file, rrn, BOS);
+                                write_item(bin_file, r, h, type_file, rec_size, old_rec_size, 1);
+                            }
                         }
                     }
 
@@ -1106,9 +1113,9 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                 }
                 
                 fseek(bin_file, pos_atual, SEEK_SET);
-                fread(&d, 1, sizeof(char), bin_file);
-                printf("%ld AGORA É (%c)[%d] %ld\n",pos_atual,d,d,ftell(bin_file)-1);
-                ungetc(d, bin_file);
+                //fread(&d, 1, sizeof(char), bin_file);
+                //printf("%ld AGORA É (%c)[%d] %ld\n",pos_atual,d,d,ftell(bin_file)-1);
+                //ungetc(d, bin_file);
             }
         }
 
@@ -1160,7 +1167,7 @@ void update_record(FILE* bin_file, RECORD* r, char** fields_u, int amt_fields, i
             if(r->city_size > 0)
                 *rec_size += - r->city_size + size_str;
             else
-                *rec_size += size_str;
+                *rec_size += 1 + 4 + size_str; //CODstr + size_string + string
             
             r->city_size = size_str;
         }
@@ -1171,7 +1178,7 @@ void update_record(FILE* bin_file, RECORD* r, char** fields_u, int amt_fields, i
             if(r->brand_size > 0)
                 *rec_size += - r->brand_size + size_str;
             else
-                *rec_size += size_str;
+                *rec_size += size_str + 5;
             
             r->brand_size = strlen(fields_u[i+1]);
         }
@@ -1182,7 +1189,7 @@ void update_record(FILE* bin_file, RECORD* r, char** fields_u, int amt_fields, i
             if(r->model_size > 0)
                 *rec_size += - r->model_size + size_str;
             else
-                *rec_size += size_str;
+                *rec_size += size_str + 5;
 
             r->model_size = size_str;
         }
