@@ -18,7 +18,7 @@ valgrind_copy: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 zip:
-	zip thierry.zip $(objects) $(headers) Makefile 
+	zip trabalho.zip $(objects) $(headers) Makefile 
 
 git: 
 	git add .
