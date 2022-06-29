@@ -30,11 +30,12 @@ void add_stack(STACK* stack, int rrn);
 /*  Transfer the stack to the 'bin_file' file */
 int write_stack(FILE* bin_file, STACK* stack);
 
-void print_stack(STACK* stack);
+/*  Remove the top of the stack */
+int remove_from_stack(STACK* stack);
 
 int return_stack_top(STACK* stack);
 
-int remove_from_stack(STACK* stack);
+void print_stack(STACK* stack);
 
 //-------------------------------LIST
 typedef struct list LIST;
@@ -56,8 +57,8 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size);
 /*  Transfers the linked list to bin_file */
 int write_list(FILE* bin_file, LIST* list);
 
+int remove_from_list(LIST* list);
+
 void print_list(LIST* list);
 
 long int return_list_top(LIST* list, int* size);
-
-int remove_from_list(LIST* list);

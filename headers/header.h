@@ -1,7 +1,3 @@
-//#ifdef HEADER_
-
-#include<stdio.h>
-
 typedef struct header{
     char status;
     int top_rrn;
@@ -47,6 +43,7 @@ char update_status(FILE* bin_file);
             -1 = pointer is at the wrong position */
 int check_status(FILE* bin_file);
 
-int ignore_header(FILE* bin_file, int type_file);
-
+/*  Updates topRRN/topBOS, nextRRN/nextBOS and numRegRem header fields in 'bin_file' */
 int update_header(FILE* bin_file, HEADER* h, int type_file, int next_RRN, long int next_BOS);
+
+int ignore_header(FILE* bin_file, int type_file);

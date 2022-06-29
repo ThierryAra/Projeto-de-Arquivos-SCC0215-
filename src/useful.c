@@ -161,7 +161,6 @@ char** read_search_fields(int n, int* is_there_id){
             *is_there_id = i;
         scan_quote_strings(array[++i]);
         
-        //printf("STRING -> %s |", array[i]);
         if(strcmp(array[i], "NULO") == 0)
             array[i][0] = '\0';
     }

@@ -46,4 +46,5 @@ INDEX* read_index_file(FILE* index_file, int* index_size, int type_file);
 /*  Sort the index vector */
 void sort_id_index(INDEX* array, int array_size);
 
+/*  Insert a record with ID and rrn/BOS into the index vector */
 void insert_index(INDEX* index, int index_size, int id, int rrn, long int BOS);

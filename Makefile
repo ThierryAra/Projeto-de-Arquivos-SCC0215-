@@ -18,17 +18,22 @@ valgrind_copy: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 zip:
-	zip trabalho.zip $(objects) $(headers) Makefile 
+	zip trabalho.zip src headers Makefile 
 
 git: 
 	git add .
 	git commit -m "Mexendo na remocao"
 	git push
 
-comp:
+cmp_bin:
 	xxd binario$(file).bin > b1.my
 	xxd arquivos/depois/binario$(file).bin > b2.out
 	code --diff b1.my b2.out
+
+cmp_ind:
+	xxd indice$(file).bin > i1.my
+	xxd arquivos/depois/indice$(file).bin > i2.out
+	code --diff i1.my i2.out
 
 rm:
 	rm binario$(file).bin

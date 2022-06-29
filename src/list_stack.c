@@ -131,10 +131,11 @@ void add_stack(STACK* stack, int rrn){
 }
 
 int write_stack(FILE* bin_file, STACK* stack){
-    if(stack->rec_amount == 0)
+    if(stack == NULL || stack->rec_amount == 0)
         return -1;
 
     NODE_stack node = stack->r_stack[stack->begin];
+    
     //updates the top of the stack
     fseek(bin_file, 1, SEEK_SET);
     fwrite(&node.rrn, 1, sizeof(int), bin_file);
@@ -145,21 +146,27 @@ int write_stack(FILE* bin_file, STACK* stack){
     //Adds the structure of the deleted records in the file to the stack
     while(stack->rec_amount != 1){
         old_node = node;
-        if(node.next != -1)
-            node = stack->r_stack[node.next];
 
         jump_to_record(bin_file, old_node.rrn, 0);
         fwrite("1", 1, sizeof(char), bin_file);
-        fwrite(&node.rrn, 1, sizeof(int), bin_file);
+        
+        if(node.next != -1){
+            node = stack->r_stack[node.next];
+            fwrite(&node.rrn, 1, sizeof(int), bin_file);
+        }
 
         stack->rec_amount--;
     }
 
-    jump_to_record(bin_file, node.rrn, 0);
+    int i = -1;
+    jump_to_record(bin_file, node.rrn, -1);
     fwrite("1", 1, sizeof(char), bin_file);
 }
 
 void print_stack(STACK* stack){
+    if(stack->rec_amount == 0)
+        return;
+
     int i = 0;
 
     NODE_stack node = stack->r_stack[stack->begin];
@@ -319,7 +326,7 @@ void print_list(LIST* list){
 }
 
 int write_list(FILE* bin_file, LIST* list){
-    if(list->rec_amount == 0)
+    if(list == NULL || list->rec_amount == 0)
         return -1;
     
     fseek(bin_file, 1, SEEK_SET);

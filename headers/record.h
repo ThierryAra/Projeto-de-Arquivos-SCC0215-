@@ -43,9 +43,8 @@ int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r);
 
 int print_record(RECORD* r);
 
-//-------------------------TRABALHO 2-------------------------------//
-/*
-    Skip exactly 1 record when reading the binary file
+//---------------------------PART 2---------------------------------//
+/*  Skip exactly 1 record when reading the binary file
     RETURN: -1 if type_file is invalid              */
 int next_register(FILE* bin_file, int type_file);
 
@@ -54,13 +53,21 @@ int next_register(FILE* bin_file, int type_file);
     bin_file, if a record matches the presented fields it will be virtually deleted.
     RETURN:
             -2 if the files are corrupted or do not exist
-             1 success                                                         */
+             1 success                                                            */
 int delete_where(FILE* bin_file, char* index_file, int n, int type_file);
 
 /*  From RRN/BOS, give a fseek directly to the position.
-    If rrn and BOS are nonzero, only the fseek of rrn will be performed           */
+    If rrn and BOS are nonzero, only the fseek of rrn will be performed      */
 void jump_to_record(FILE* file, int rrn, long int BOS);
 
+/*  Insert 'n' records into 'bin_file' and update index file 'name_index'
+    RETURN:
+            -2 if the files are corrupted or do not exist
+             1 success                                                            */
 int insert_into(FILE* bin_file, char* name_index, int n, int type_file);
 
+/*  Atualiza 'n' registros em 'bin_file' and update index file 'name_index'
+    RETURN:
+            -2 if the files are corrupted or do not exist
+             1 success                                                            */
 int update_where(FILE* bin_file, char* name_index, int n, int type_file);

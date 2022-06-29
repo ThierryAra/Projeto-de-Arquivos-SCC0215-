@@ -193,11 +193,8 @@ INDEX* read_index_file(FILE* index_file, int* id_index_size, int type_file){
             id_index = realloc(id_index, sizeof(INDEX)*size);
         }
     }
-    
 
     *id_index_size = i;
-    /* if(*id_index_size != size) 
-        id_index = realloc(id_index, sizeof(INDEX)*i); */
     
     sort_id_index(id_index, *id_index_size);
     return id_index;
@@ -225,10 +222,9 @@ void free_index_array(INDEX* id_index){
 
 void insert_index(INDEX* index, int index_size, int id, int rrn, long int BOS){
     index[index_size].id = id;
-    if(rrn != -1)
-        index[index_size].rrn = rrn;
-    else
-        index[index_size].BOS = BOS;
+    
+    if(rrn != -1) index[index_size].rrn = rrn;
+    else          index[index_size].BOS = BOS;
 }
 
 void update_id_index(
@@ -259,8 +255,7 @@ void update_id_index(
             id_index[position].rrn = rrn;
         
         if(BOS != -1 && id_index[position].BOS != BOS)
-            id_index[position].BOS = BOS;
-        
+            id_index[position].BOS = BOS;     
     }
 }
 
@@ -272,21 +267,18 @@ int recover_rrn(
     //SIMPLE BINARY SEARCH
     int begin = 0;
     int end   = (id_index_size)-1;
-    //printf("\n\nFIM %d id end %d\n\n",end,id_index[end].id);
-    //printf("BUSCANDO %d -> ", id);
     int mid = (begin + end)/2; 
+    
     while(begin <= end){
-        //printf("[%d] %d [%d] | ", id_index[begin].id, id_index[mid].id, id_index[end].id);
         if(id_index[mid].id == id){
-            //printf("\nACHEI O %d\n", id_index[mid].id);
-            if(type_file == 1){
+             if(type_file == 1){
                 *rrn = id_index[mid].rrn;
                 *BOS = -1;
             }else{
                 *rrn = -1;
                 *BOS = id_index[mid].BOS;
             }
-            //printf("ACHEI O %d EM %d POS %d\n", id_index[mid].id, id_index[mid].rrn, mid);
+            
             return mid;   
         }
                 
