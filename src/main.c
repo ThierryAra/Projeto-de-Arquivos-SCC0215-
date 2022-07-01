@@ -9,7 +9,9 @@
  |Authors: Gustavo Sampaio Lima (12623992) and Thierry de Souza Araujo (12681094)|
  *********************************************************************************
   > "Segundo Trabalho Pratico"
-  > Objective: 
+  > Objective: To implement a C program through which the user can
+    insert, remove and update data from binary files, as well as create indexes for
+    index these files
  ********************************************************************************/
 
 /* 
