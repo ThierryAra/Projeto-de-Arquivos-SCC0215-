@@ -1,3 +1,5 @@
+#ifndef HEADER_
+#define HEADER_
 typedef struct header{
     char status;
     int top_rrn;
@@ -47,3 +49,5 @@ int check_status(FILE* bin_file);
 int update_header(FILE* bin_file, HEADER* h, int type_file, int next_RRN, long int next_BOS);
 
 int ignore_header(FILE* bin_file, int type_file);
+
+#endif

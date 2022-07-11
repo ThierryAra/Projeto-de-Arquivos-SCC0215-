@@ -7,11 +7,18 @@
 
 INDEX* read_data_file(FILE* bin_file, int* id_index_size, int type_file);
 
-struct index{
-    int id;
-    int rrn;
-    long int BOS;
-};
+INDEX* initialize_index(){
+    INDEX* index = malloc(sizeof(INDEX));
+    index->id = -1;
+    index->BOS = -1;
+    index->rrn = -1;
+
+    return index;
+}
+
+void free_index(INDEX* index){
+    if(index != NULL) free(index);
+}
 
 void write_index(FILE* index_file, INDEX* index, int index_size, int type_file){
     //write status (header) of the index file

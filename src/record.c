@@ -2,7 +2,6 @@
 #include<stdlib.h>
 #include<string.h>
 #include"../headers/useful.h"
-#include"../headers/header.h"
 #include"../headers/record.h" 
 #include"../headers/index.h"
 #include"../headers/list_stack.h"
@@ -619,6 +618,7 @@ void jump_header(FILE* file, int type_file){
     if(type_file == 1) fseek(file, STATIC_REC_HEADER, SEEK_SET);
     else               fseek(file, VARIABLE_REC_HEADER, SEEK_SET);
 }
+
 /* --------------------------SECOND PART-------------------------------- */
 /*   Delete a given record by adding it to the stack or linked list, in addition to removing
     from the array of indices, based on 'pos', which is the position of the record in the array */
@@ -628,7 +628,7 @@ void delete_record(FILE* bin_file, int type_file, INDEX* index, int *index_size,
 /*   Inserts a record 'r' at a certain position in the data file, decided based on the number of 
     records already deleted, as well as inserting the record into the index vector              */
 void insert_record(FILE* bin_file, HEADER* h, STACK* stack, LIST* list, int type_file, int* next_RRN,
-    long int* next_BOS, int rec_size, int old_rec_size, RECORD* r, INDEX* index, int* index_size);
+                   long int* next_BOS, int rec_size, int old_rec_size, RECORD* r, INDEX* index, int* index_size);
 
 /*  Updates the fields of an 'r' record based on the fields described in 'u_fields' */
 void update_record(FILE* bin_file, RECORD* r, char** u_fields, int amt_fields, int* rec_size);
@@ -1220,4 +1220,9 @@ void jump_to_record(FILE* file, int rrn, long int BOS){
         fseek(file, (rrn*STATIC_REC_SIZE)+STATIC_REC_HEADER, SEEK_SET);
     else if(BOS !=  -1)
         fseek(file, BOS, SEEK_SET);
+}
+
+//-------------------------THIRD PART---------------------------------//
+int get_id(RECORD* r){
+    return r->id;
 }

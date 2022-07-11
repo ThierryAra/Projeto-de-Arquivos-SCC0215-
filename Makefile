@@ -1,5 +1,6 @@
-objects = src/main.c src/record.c src/useful.c src/header.c src/index.c src/list_stack.c
-headers = headers/record.h headers/useful.h headers/header.h headers/index.h headers/list_stack.h
+
+objects = src/main.c src/record.c src/useful.c src/header.c src/index.c src/list_stack.c src/index_B.c
+headers = headers/record.h headers/useful.h headers/header.h headers/index.h headers/list_stack.h headers/index_B.h
 executable = run
 file = 17
 

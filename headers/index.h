@@ -1,7 +1,14 @@
 #include<stdio.h>
 
 typedef struct index INDEX;
+struct index{
+    int id;
+    int rrn;
+    long int BOS;
+};
 
+INDEX* initialize_index();
+void free_index(INDEX* index);
 /*  Read a data file and create an index file by matching ID
     RETURN:
             -2 if the parameters are invalid

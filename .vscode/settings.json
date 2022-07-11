@@ -3,6 +3,8 @@
     "files.associations": {
         "header.h": "c",
         "index.h": "c",
-        "record.h": "c"
+        "record.h": "c",
+        "index_b.h": "c",
+        "useful.h": "c"
     }
 }

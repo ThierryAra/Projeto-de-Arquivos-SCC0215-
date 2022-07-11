@@ -3,6 +3,8 @@
 #define VARIABLE_REC_HEADER 190 
 #define STR_SIZE 30  
 
+#include"../headers/header.h"
+
 typedef struct record RECORD;
 
 /*  Allocate space for a record */
@@ -71,3 +73,6 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file);
             -2 if the files are corrupted or do not exist
              1 success                                                            */
 int update_where(FILE* bin_file, char* name_index, int n, int type_file);
+
+int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file);
+int get_id(RECORD* r);

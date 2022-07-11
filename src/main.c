@@ -25,8 +25,8 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
-#include"../headers/useful.h"
 #include"../headers/record.h"
+#include"../headers/useful.h"
 #include"../headers/index.h"
 
 int main(){
@@ -235,6 +235,33 @@ int main(){
                 binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);
             }
+        case 9:
+            read_word(name_bin, stdin);
+            read_word(name_index_bin, stdin);
+
+            bin_file = fopen(name_bin, "rb");
+            bin_index_file = fopen(name_index_bin, "wb");
+
+            if(strcmp(type_file, "tipo1") == 0)
+                res = update_where(bin_file, name_index_bin, update_amount, 1);
+            else if(strcmp(type_file, "tipo2") == 0)
+                res = update_where(bin_file, name_index_bin, update_amount, 2);
+            else
+                printf("Falha no processamento do arquivo.");
+
+            if(res != SUCESS)
+                printf("Falha no processamento do arquivo."); 
+            else{
+                fclose(bin_file);
+                fclose(bin_index_file);
+                bin_file = NULL;
+                bin_index_file = NULL;
+                
+                binarioNaTela(name_bin);
+                binarioNaTela(name_index_bin);
+            }
+
+            break;
     }
 
     if(bin_file != NULL) 
