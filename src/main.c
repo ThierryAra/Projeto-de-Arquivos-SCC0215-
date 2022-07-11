@@ -28,6 +28,7 @@
 #include"../headers/record.h"
 #include"../headers/useful.h"
 #include"../headers/index.h"
+#include"../headers/index_B.h"
 
 int main(){
 
@@ -243,9 +244,9 @@ int main(){
             bin_index_file = fopen(name_index_bin, "wb");
 
             if(strcmp(type_file, "tipo1") == 0)
-                res = update_where(bin_file, name_index_bin, update_amount, 1);
+                res = create_b_tree_index(bin_file, bin_index_file, 1);
             else if(strcmp(type_file, "tipo2") == 0)
-                res = update_where(bin_file, name_index_bin, update_amount, 2);
+                res = create_b_tree_index(bin_file, bin_index_file, 2);
             else
                 printf("Falha no processamento do arquivo.");
 
@@ -257,7 +258,6 @@ int main(){
                 bin_file = NULL;
                 bin_index_file = NULL;
                 
-                binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);
             }
 

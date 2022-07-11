@@ -2,7 +2,7 @@
 objects = src/main.c src/record.c src/useful.c src/header.c src/index.c src/list_stack.c src/index_B.c
 headers = headers/record.h headers/useful.h headers/header.h headers/index.h headers/list_stack.h headers/index_B.h
 executable = run
-file = 17
+file = 1
 
 all:
 	gcc $(objects) -o $(executable) -g
@@ -12,11 +12,11 @@ run: all
 
 valgrind: all
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
+	cp -fR arquivos/antes/indice$(file).bin .
 
 valgrind_copy: all
 	cp -fR arquivos/antes/binario$(file).bin .
-	cp -fR arquivos/antes/indice$(file).bin .
-	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
+	valgrind  ./$(executable)
 
 zip:
 	zip trabalho.zip src headers Makefile 

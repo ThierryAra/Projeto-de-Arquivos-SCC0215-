@@ -9,58 +9,36 @@
 #define NoPROMOTED 1 
 #define PROMOTED 2
 
-#define MAX_KEYS TREE_ORDER-1
-#define MIN_KEYS TREE_ORDER/2
+#define MAX_KEYS (TREE_ORDER-1)
+#define MIN_KEYS (TREE_ORDER/2)
 
 #define STATIC_INDEX_B 45
-#define VARIABLE_INDEX_B 56
+#define VARIABLE_INDEX_B 57
 
-typedef struct b_tree{
+struct b_tree{
+    char status;
     int order;
-    int status;
     int root_node;
     int nextRRN;
     int qtt_nodes;
-}B_TREE;
+};
 
-typedef struct node_t{
+struct node_t{
     char type;
     int qtt_keys;
     int c[TREE_ORDER - 1];
     long int pr[TREE_ORDER - 1];
     int p[TREE_ORDER];
-}NODE_T;                                                                 
+};                                                                 
 
-int insert(FILE* ind, INDEX* key, int curr_rrn, int* 
-          promo_child, INDEX* promo_key, int type_file);
-          
-void split(FILE* index_file, INDEX* key, INDEX* promo_key, int p_b_rrn, 
-          int* promo_child, NODE_T* node_t, NODE_T* new_node_t,  int type_file); 
-
-int find_key_in_node(NODE_T* node_t, int key, int type_file);
-
-NODE_T read_node(FILE* index_file, int type_file);
-
-void insert_in_node(INDEX* key, int r_child, NODE_T* node, int type_file);
-
-int get_next_rrn(FILE* index_file);
-
-void jump_to_root(FILE* index_file, B_TREE* b, int type_file);
-
-void create_root(FILE* index_file, B_TREE* b, INDEX* key, int left, int right, int type_file);
-
-void jump_to_node_b(FILE* index_file, int rrn, int type_file);
-
-void write_node(FILE* index_file, int rrn, int type_file, NODE_T node);
-//---------------------------------------------------------
 B_TREE* initialize_b_tree(int order){
     B_TREE* b = malloc(sizeof(B_TREE));
 
-    b->order = TREE_ORDER;
+    b->status = '0';
     b->nextRRN = 0;
     b->qtt_nodes = 0;
-    b->status = 0;
     b->root_node = -1;
+    b->order = TREE_ORDER;
 
     return b;
 }
@@ -78,26 +56,24 @@ NODE_T initialize_node(char node_type){
     }
 
     node_t.p[i] = -1;
+
+    return node_t;
 }
 
 void create_b_tree_file(B_TREE* b, FILE* index_file, int type_file){
     //Escrevendo o cabecalho
-    fwrite(&b->status, 1, sizeof(int),index_file);
+    fwrite(&b->status, 1, sizeof(char),index_file);
     fwrite(&b->root_node, 1, sizeof(int),index_file);
     fwrite(&b->nextRRN, 1, sizeof(int),index_file);
     fwrite(&b->qtt_nodes, 1, sizeof(int),index_file);
 
     // preenchendo o cabecalho com lixo para obter o mesmo tamanho dos nos
     int qtt = 0;
-    if(type_file == 1) qtt = 32;
-    else               qtt = 44;
+    if(type_file == 1) qtt = STATIC_INDEX_B - 13;
+    else               qtt = VARIABLE_INDEX_B - 13;
 
     for (int i = 0; i < qtt; i++)
         fwrite("$", 1, sizeof(char), index_file); 
-
-    INDEX* root = initialize_index();
-    create_root(index_file, b, root, -1, -1, type_file);
-    free_index(root);
 }
 
 int create_b_tree_index(FILE* bin_file, FILE* index_file, int type_file){
@@ -128,29 +104,24 @@ int create_b_tree_index(FILE* bin_file, FILE* index_file, int type_file){
             index.id = get_id(r);
             if(type_file == 1) index.rrn = rrn;
             else               index.BOS = BOS;
+            printf("INSERI 1 -> root node %d\n", b->root_node);
             p = insert(index_file, &index, b->root_node, &promo_child, promo_key, type_file); 
+            
             if(p == PROMOTED)
                 create_root(index_file, b, promo_key, b->root_node, promo_child, type_file);
-                
-
+            
+            if(get_id(r) == 3)
+                return 1;
             promo_child = -1;
         }
 
         rrn++;
     }
+
+    free(b);
+    return 1;
 }
 
-/**
- * @brief 
- * 
- * @param ind 
- * @param key 
- * @param curr_rrn 
- * @param promo_child 
- * @param promo_key 
- * @param type_file 
- * @return int 
- */
 int insert(FILE* ind, INDEX* key, int curr_rrn, int* promo_child, INDEX* promo_key, int type_file){
     //Armazena onde sera inserida a nova chave e o rrn do nos recursivos na busca da posicao
     int next_node = -1;
@@ -161,6 +132,7 @@ int insert(FILE* ind, INDEX* key, int curr_rrn, int* promo_child, INDEX* promo_k
     NODE_T node_t;
 
 
+    //fim da arvore alcancada e nao foi encontrada, entao deve ser inserida
     if(curr_rrn == -1){
         *promo_key   = *key;
         *promo_child = -1;
@@ -169,6 +141,13 @@ int insert(FILE* ind, INDEX* key, int curr_rrn, int* promo_child, INDEX* promo_k
         return PROMOTED;
     }
     
+    jump_to_node_b(ind, curr_rrn, type_file);
+    
+    char c = 0;
+    c=fgetc(ind);
+    printf("\n\nc -> (%c)\n\n", c);
+    ungetc(c, ind);
+
     node_t = read_node(ind, type_file);
     next_node = find_key_in_node(&node_t, key->id, type_file);
 
@@ -190,7 +169,8 @@ int insert(FILE* ind, INDEX* key, int curr_rrn, int* promo_child, INDEX* promo_k
     // Há espaco para a insercao da chave no nó 
     }else if(node_t.qtt_keys < TREE_ORDER - 1){
         insert_in_node(key, 0, &node_t, type_file);
-        
+        print_node(&node_t);
+        write_node(ind, curr_rrn, type_file, node_t);
         free_index(p_b_key);
         return NoPROMOTED;
 
@@ -198,75 +178,12 @@ int insert(FILE* ind, INDEX* key, int curr_rrn, int* promo_child, INDEX* promo_k
     }else{
         NODE_T new_node_t;
         split(ind, p_b_key, promo_key, p_b_rrn, promo_child, &node_t, &new_node_t, type_file);
-        
+        write_node(ind, curr_rrn, type_file, node_t);
+        write_node(ind, p_b_rrn, type_file, new_node_t);
         free_index(p_b_key);
         return PROMOTED;
     }
 }
-
-NODE_T read_node(FILE* index_file, int type_file){
-    NODE_T node_t;
-    
-    fread(&node_t.type, sizeof(int), 1, index_file);
-    fread(&node_t.qtt_keys, sizeof(int), 1, index_file);
-    
-    for (int i = 0; i < TREE_ORDER - 1; i++){
-        fread(&node_t.c[i], sizeof(int), 1, index_file); //key[i]
-        //reference to key[i] in data_file
-        if(type_file == 1) fread(&node_t.pr[i], sizeof(int), 1, index_file);  
-        else               fread(&node_t.pr[i], sizeof(long int), 1, index_file); 
-    }
-    
-    for (int i = 0; i < TREE_ORDER; i++)
-        fread(&node_t.p[i], sizeof(int), 1, index_file); //reference sub-tree
-
-    return node_t;
-}
-
-int find_key_in_node(NODE_T* node_t, int key, int type_file){
-    int next_node = -1;
-    //buscando pela chave no nó atual
-    for (int i = 0; i < TREE_ORDER - 1; i++){
-        if(node_t->c[i] == key)
-            return -2;
-
-        //caso nao encontre a chave, next_node contera o RRN do proximo nó na arvore
-        else if(next_node == -1 && (node_t->c[i] == -1 || key < node_t->c[i]))
-            if(node_t->c[i] == -1)
-                next_node = node_t->p[i - 1];
-            else if(key < node_t->c[i])
-                next_node = node_t->p[i];
-    }
-    
-    if(next_node == -1)
-        next_node = node_t->p[TREE_ORDER - 1];
-
-    return next_node;
-} 
-
-/* INDEX* find_key_in_node(NODE_T node_t, int key, int type_file){
-    INDEX* index = initialize_index();
-
-    //buscando pela chave no nó atual
-    for (int i = 0; i < TREE_ORDER - 1; i++){
-        if(node_t.c[i] == key){
-            index->id = node_t.c[i];
-            if(type_file == 1) index->rrn = node_t.pr[i];
-            else               index->BOS = node_t.pr[i];
-        
-            return index;
-        }
-        //caso nao encontre a chave, index->rrn contera o RRN do proximo nó na arvore
-        else if(index->rrn == -1 && (node_t.c[i] == -1 || key < node_t.c[i])){
-            index->rrn = node_t.p[i - 1];
-        }
-    }
-    
-    if(index->rrn == -1)
-        index->rrn = node_t.p[TREE_ORDER - 1];
-
-    return index;
-} */
 
 void split(
     FILE* index_file,
@@ -344,6 +261,53 @@ void split(
     *promo_key = keys[MIN_KEYS];
 }
 
+NODE_T read_node(FILE* index_file, int type_file){
+    NODE_T node_t;
+    
+    fread(&node_t.type, sizeof(char), 1, index_file);
+    fread(&node_t.qtt_keys, sizeof(int), 1, index_file);
+    
+    //printf("TIPO: %c [%d]\n", node_t.type, node_t.type);    
+    //printf("QTT KEYS: %d\n", node_t.qtt_keys);       
+    for (int i = 0; i < TREE_ORDER - 1; i++){
+        fread(&node_t.c[i], sizeof(int), 1, index_file); //key[i]
+        //reference to key[i] in data_file
+        if(type_file == 1) fread(&node_t.pr[i], sizeof(int), 1, index_file);  
+        else               fread(&node_t.pr[i], sizeof(long int), 1, index_file); 
+        //printf("KEY i: %d -> %d : ", i, node_t.c[i]);    
+        //printf("%ld\n", node_t.pr[i]);    
+    }
+    for (int i = 0; i < TREE_ORDER; i++){
+        fread(&node_t.p[i], sizeof(int), 1, index_file); //reference sub-tree
+        //printf("p: %d\n", node_t.p[i]);
+    }
+
+    return node_t;
+}
+
+int find_key_in_node(NODE_T* node_t, int key, int type_file){
+    printf("PROCURANDO NO NO\n");
+    print_node(node_t);
+    int next_node = -1;
+    //buscando pela chave no nó atual
+    for (int i = 0; i < TREE_ORDER - 1; i++){
+        if(node_t->c[i] == key)
+            return -2;
+
+        //caso nao encontre a chave, next_node contera o RRN do proximo nó na arvore
+        else if(next_node == -1 && (node_t->c[i] == -1 || key < node_t->c[i]))
+            if(node_t->c[i] == -1)
+                next_node = node_t->p[i - 1];
+            else if(key < node_t->c[i])
+                next_node = node_t->p[i];
+    }
+    
+    if(next_node == -1)
+        next_node = node_t->p[TREE_ORDER - 1];
+
+    return next_node;
+} 
+
 void insert_in_node(INDEX* key, int r_child, NODE_T* node, int type_file){
     int i = node->qtt_keys;
     
@@ -366,9 +330,10 @@ void insert_in_node(INDEX* key, int r_child, NODE_T* node, int type_file){
 
 int get_next_rrn(FILE* index_file){
     int next = -1;
-    long int BOS = ftell(index_file);
 
     if(index_file != NULL){
+        long int BOS = ftell(index_file);
+        
         fseek(index_file, 5, SEEK_SET);
         fread(&next, sizeof(int), 1, index_file);    
         
@@ -389,10 +354,15 @@ void jump_to_root(FILE* index_file, B_TREE* b, int type_file){
 }
 
 void jump_to_node_b(FILE* index_file, int rrn, int type_file){
-    if(type_file == 1)
-        fseek(index_file, rrn*STATIC_INDEX_B + STATIC_INDEX_B, SEEK_SET);
-    else
-        fseek(index_file, rrn*VARIABLE_INDEX_B + VARIABLE_INDEX_B, SEEK_SET);
+    printf("jump to RRN: %d\n", rrn);
+    if(type_file == 1){
+        printf("%d", (rrn*STATIC_INDEX_B) + STATIC_INDEX_B);
+        fseek(index_file, (rrn*STATIC_INDEX_B) + STATIC_INDEX_B, SEEK_SET);
+    }
+    else{
+        printf("%d", (rrn*VARIABLE_INDEX_B) + VARIABLE_INDEX_B);
+        fseek(index_file, (rrn*VARIABLE_INDEX_B) + VARIABLE_INDEX_B, SEEK_SET);
+    }
 }
 
 void write_node(FILE* index_file, int rrn, int type_file, NODE_T node){
@@ -409,13 +379,14 @@ void write_node(FILE* index_file, int rrn, int type_file, NODE_T node){
     }
 
     //childs
-    for (int i = 0; i < TREE_ORDER; i++)
+    for (int i = 0; i < TREE_ORDER; i++){
         fwrite(&node.p[i], 1, sizeof(int), index_file);
+    }
 }
 
 void create_root(FILE* index_file, B_TREE* b, INDEX* key, int left, int right, int type_file){
     NODE_T node = initialize_node(ROOT_NODE);
-
+    
     //Alterando a antiga raiz caso haja a insercao de uma nova
     if(b->root_node != -1){
         jump_to_root(index_file, b, type_file);
@@ -430,7 +401,22 @@ void create_root(FILE* index_file, B_TREE* b, INDEX* key, int left, int right, i
 
     node.qtt_keys = 1;
 
+    printf("CRIANDO NÓ: ");
+    print_node(&node);
     write_node(index_file, b->nextRRN, type_file, node);
     b->root_node = b->nextRRN++;
+}
+
+void print_node(NODE_T* node){
+    printf("TYPE: %c\n", node->type);
+    printf("QTT: %d\n", node->qtt_keys);
+    
+    for(int i = 0; i < TREE_ORDER - 1; i++)
+        printf("KEY: %d [%ld]\n", node->c[i], node->pr[i]);
+    
+    printf("P  : ");
+    for(int i = 0; i < TREE_ORDER; i++)
+        printf("[%i]: %d -> ", i, node->p[i]);
+    printf("\n\n\n");
 }
 
