@@ -241,7 +241,7 @@ int main(){
             read_word(name_index_bin, stdin);
 
             bin_file = fopen(name_bin, "rb");
-            bin_index_file = fopen(name_index_bin, "wb");
+            bin_index_file = fopen(name_index_bin, "w+b");
 
             if(strcmp(type_file, "tipo1") == 0)
                 res = create_b_tree_index(bin_file, bin_index_file, 1);

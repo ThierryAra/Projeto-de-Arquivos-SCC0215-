@@ -46,5 +46,6 @@ void jump_to_node_b(FILE* index_file, int rrn, int type_file);
 
 void write_node(FILE* index_file, int rrn, int type_file, NODE_T node);
 
-void print_node(NODE_T* node);
+void print_node(NODE_T* node, int type_file);
+
 #endif

@@ -15,8 +15,9 @@ valgrind: all
 	cp -fR arquivos/antes/indice$(file).bin .
 
 valgrind_copy: all
+	clear
 	cp -fR arquivos/antes/binario$(file).bin .
-	valgrind  ./$(executable)
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(executable)
 
 zip:
 	zip trabalho.zip src headers Makefile 
