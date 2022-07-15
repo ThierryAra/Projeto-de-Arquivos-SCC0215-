@@ -3,6 +3,9 @@
 #define VARIABLE_REC_HEADER 190 
 #define STR_SIZE 30  
 
+#define SIMPLE_INDEX 4
+#define B_TREE_INDEX 5
+
 #include"../headers/header.h"
 
 typedef struct record RECORD;
@@ -66,7 +69,7 @@ void jump_to_record(FILE* file, int rrn, long int BOS);
     RETURN:
             -2 if the files are corrupted or do not exist
              1 success                                                            */
-int insert_into(FILE* bin_file, char* name_index, int n, int type_file);
+int insert_into(FILE* bin_file, char* name_index, int n, int type_file, int index_mode);
 
 /*  Atualiza 'n' registros em 'bin_file' and update index file 'name_index'
     RETURN:
@@ -75,4 +78,7 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file);
 int update_where(FILE* bin_file, char* name_index, int n, int type_file);
 
 int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file);
+
 int get_id(RECORD* r);
+
+int search_with_b_tree(FILE* bin_file, FILE* index_file, int type_file);

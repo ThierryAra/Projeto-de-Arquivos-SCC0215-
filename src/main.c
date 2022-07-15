@@ -195,9 +195,9 @@ int main(){
             bin_file = fopen(name_bin, "r+b");
 
             if(strcmp(type_file, "tipo1") == 0)
-                res = insert_into(bin_file, name_index_bin, insertion_amount, 1);
+                res = insert_into(bin_file, name_index_bin, insertion_amount, 1, SIMPLE_INDEX);
             else if(strcmp(type_file, "tipo2") == 0)
-                res = insert_into(bin_file, name_index_bin, insertion_amount, 2);
+                res = insert_into(bin_file, name_index_bin, insertion_amount, 2, SIMPLE_INDEX);
             else
                 printf("Falha no processamento do arquivo.");
 
@@ -262,10 +262,57 @@ int main(){
             }
 
             break;
+        case 10:
+            read_word(name_bin, stdin);
+            read_word(name_index_bin, stdin);
+
+            bin_file = fopen(name_bin, "rb");
+            bin_index_file = fopen(name_index_bin, "rb");
+
+            if(strcmp(type_file, "tipo1") == 0)
+                res = search_with_b_tree(bin_file, bin_index_file, 1);
+            else if(strcmp(type_file, "tipo2") == 0)
+                res = search_with_b_tree(bin_file, bin_index_file, 2);
+            else
+                printf("Falha no processamento do arquivo.");
+            
+            if(res == ERROR)
+                printf("Falha no processamento do arquivo.");
+            else if(res == INEXISTENT_DATA)
+                printf("Registro inexistente.");
+            break;
+        case 11:
+            read_word(name_bin, stdin);
+            read_word(name_index_bin, stdin);
+
+            int insertion_amt = 0;
+            scanf("%d\r\n", &insertion_amt);
+
+            bin_file = fopen(name_bin, "r+b");
+
+            if(strcmp(type_file, "tipo1") == 0)
+                res = insert_into(bin_file, name_index_bin, insertion_amt, 1, B_TREE_INDEX);
+            else if(strcmp(type_file, "tipo2") == 0)
+                res = insert_into(bin_file, name_index_bin, insertion_amt, 2, B_TREE_INDEX);
+            else
+                printf("Falha no processamento do arquivo.");
+
+            if(res != SUCESS)
+                printf("Falha no processamento do arquivo."); 
+            else{
+                fclose(bin_file);
+                bin_file = NULL;
+                
+                binarioNaTela(name_bin);
+                binarioNaTela(name_index_bin);
+            }
+                
     }
 
     if(bin_file != NULL) 
         fclose(bin_file);  
+    if(bin_index_file != NULL)
+        fclose(bin_index_file);
     
     return 0;
 }

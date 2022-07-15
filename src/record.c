@@ -5,6 +5,7 @@
 #include"../headers/record.h" 
 #include"../headers/index.h"
 #include"../headers/list_stack.h"
+#include"../headers/index_B.h"
 
 int read_item_csv(FILE* csv_file, RECORD* r);
 void jump_header(FILE* file, int type_file);
@@ -630,6 +631,9 @@ void delete_record(FILE* bin_file, int type_file, INDEX* index, int *index_size,
 void insert_record(FILE* bin_file, HEADER* h, STACK* stack, LIST* list, int type_file, int* next_RRN,
                    long int* next_BOS, int rec_size, int old_rec_size, RECORD* r, INDEX* index, int* index_size);
 
+void insert_record_b(FILE* bin_file, FILE* index_f, HEADER* h, RECORD* r,STACK* stack, LIST* list, 
+                    int type_file, int* next_RRN, long int* next_BOS, int rec_size, int old_rec_size, B_TREE* b);
+
 /*  Updates the fields of an 'r' record based on the fields described in 'u_fields' */
 void update_record(FILE* bin_file, RECORD* r, char** u_fields, int amt_fields, int* rec_size);
 
@@ -771,7 +775,7 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
     return 1;
 }
 
-int insert_into(FILE* bin_file, char* name_index, int n, int type_file){
+int insert_into(FILE* bin_file, char* name_index, int n, int type_file, int index_mode){
     FILE* index_file = fopen(name_index, "r+b");
     if(bin_file == NULL || index_file == NULL)
         return -2;
@@ -783,8 +787,16 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file){
     update_status(index_file);
 
     int index_size = 0;
-    INDEX* index = read_index_file(index_file, &index_size, type_file);
-    
+    INDEX* index = NULL;
+    B_TREE* b = NULL;
+
+    if(index_mode == SIMPLE_INDEX)
+        read_index_file(index_file, &index_size, type_file);
+    else{
+        fseek(index_file, 0, SEEK_SET);
+        b = read_header_b_tree(index_file, type_file);
+    }
+
     //Linked list and Stack that will help the exclusion structures
     STACK* stack = NULL;
     LIST*  list  = NULL;
@@ -822,16 +834,27 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file){
     for(int i = 0; i < n; i++){
         rec_size = read_insert_data(stdin, r);
         
-        insert_record(bin_file, h, stack, list, type_file, &next_RRN, 
-                     &next_BOS, rec_size, rec_size, r, index, &index_size);
+        if(index_mode == SIMPLE_INDEX)
+            insert_record(bin_file, h, stack, list, type_file, &next_RRN, 
+                            &next_BOS, rec_size, rec_size, r, index, &index_size);
+        else
+            insert_record_b(bin_file, index_file, h, r, stack, list, type_file, 
+                                &next_RRN, &next_BOS, rec_size, rec_size, b);
     }
 
     free_rec(r);
 
-    fclose(index_file);
-    index_file = fopen(name_index, "w+b");
-    udpate_files(bin_file, index_file, index, index_size, h, 
-                type_file, stack, list, next_RRN, next_BOS);
+    if(index_mode == SIMPLE_INDEX){
+        fclose(index_file);
+        index_file = fopen(name_index, "w+b");
+        udpate_files(bin_file, index_file, index, index_size, h, 
+                    type_file, stack, list, next_RRN, next_BOS);
+    }else{
+        update_header_b(index_file, b);
+        udpate_files(bin_file, index_file, NULL, -1, h, 
+                    type_file, stack, list, next_RRN, next_BOS);
+        free(b);
+    }
     
     return 1;
 }
@@ -1127,9 +1150,6 @@ void udpate_files(
     STACK* s, LIST* l, 
     int rrn, long int BOS
 ){
-    if(bin_file == NULL && index_file == NULL)
-        return;
-
     if(type_file == 1){
         h->top_rrn = return_stack_top(s);
         write_stack(bin_file, s);
@@ -1141,14 +1161,16 @@ void udpate_files(
         
     update_header(bin_file, h, type_file, rrn, BOS);
 
-    write_index(index_file, index, index_size, type_file);
-    update_status(index_file);
+    if(index != NULL){
+        write_index(index_file, index, index_size, type_file);
+        update_status(index_file);
+        
+        free_index_array(index);
+    }
 
     free_header(h);
     free_stack(s);
     free_list(l);
-
-    free_index_array(index);
     fclose(index_file);
 }
 
@@ -1226,3 +1248,109 @@ void jump_to_record(FILE* file, int rrn, long int BOS){
 int get_id(RECORD* r){
     return r->id;
 }
+
+int search_with_b_tree(FILE* bin_file, FILE* index_file, int type_file){
+    if(bin_file == NULL || index_file == NULL)
+        return -2;
+
+    B_TREE* b = read_header_b_tree(index_file, type_file);
+
+    // Verifica qual sera o campo de busca
+    char index[30];
+    read_word(index, stdin);
+
+    if(strcmp(index, "id") == 0){
+        int value = 0;
+        scanf("%d", &value);
+
+        int pos = search_b(index_file, type_file, value, get_root_node(b));
+
+        if(pos != -1){
+            if(type_file == 1) jump_to_record(bin_file, pos, -1);
+            else               jump_to_record(bin_file, -1, pos);
+
+            RECORD* r = create_record();
+            HEADER* h = create_header();
+            get_record(bin_file, r, h, type_file);
+
+            print_record(r);
+            free_rec(r);
+            free_header(h);
+        }else
+            return -1;
+    }else
+        return -2;
+
+    free(b);
+}
+
+void insert_record_b(
+    FILE* bin_file, FILE* index_f,
+    HEADER* h, RECORD* r,
+    STACK* stack, LIST* list, 
+    int type_file, int* next_RRN, long int* next_BOS, 
+    int rec_size, int old_rec_size, B_TREE* b
+){
+    int rrn = -1;
+    long int BOS = -1;
+
+    long int list_top = -1;
+    int list_top_size = -1;
+
+    if(type_file == 1){
+        h->top_rrn = return_stack_top(stack);
+
+        // If there is a removed record, the insertion takes place on it
+        if(h->top_rrn != -1){
+            jump_to_record(bin_file, h->top_rrn, -1);
+            rrn = (ftell(bin_file)-STATIC_REC_HEADER)/STATIC_REC_SIZE;
+            
+            remove_from_stack(stack);
+            h->numRegRem--;
+        }
+        else{
+            rrn = *next_RRN;
+            jump_to_record(bin_file, (*next_RRN)++, -1);
+        }
+
+        write_item(bin_file, r, h, type_file, list_top_size, 1);
+    }else{
+        h->top_BOS = return_list_top(list, &list_top_size);
+
+        // If there is a record removed and the size is smaller 
+        //than what I want to add, the insertion takes place at this position
+        if(h->top_BOS != -1 && rec_size <= list_top_size){
+            jump_to_record(bin_file, -1, h->top_BOS);
+            BOS = h->top_BOS;
+            write_item(bin_file, r, h, type_file, list_top_size, 1);
+            
+            remove_from_list(list);
+            h->numRegRem--;
+        }
+        else{
+            BOS = *next_BOS;
+            jump_to_record(bin_file, -1, *next_BOS);
+            write_item(bin_file, r, h, type_file, rec_size, 0);
+            
+            (*next_BOS) = ftell(bin_file);
+        }
+    }
+    
+    int promo_child = -1;
+    INDEX* key = initialize_index();
+    key->id =  r->id;
+
+    INDEX* promo_key = initialize_index();
+
+    if(type_file == 1)  key->rrn = rrn;
+    else                key->BOS = BOS;
+
+    int pos = insert_b(index_f, b, key, get_root_node(b), &promo_child, promo_key, type_file); 
+            
+    if(pos == PROMOTED)
+        create_root(index_f, b, promo_key, get_root_node(b), promo_child, type_file);
+
+    free_index(key);
+    free_index(promo_key);
+}
+
