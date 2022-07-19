@@ -1253,27 +1253,34 @@ int search_with_b_tree(FILE* bin_file, FILE* index_file, int type_file){
     if(bin_file == NULL || index_file == NULL)
         return -2;
 
+    if(!check_status(bin_file) || !check_status(index_file))
+        return -1;
+        
     B_TREE* b = read_header_b_tree(index_file, type_file);
 
-    // Verifica qual sera o campo de busca
+    // Check what the search field will be
     char index[30];
     read_word(index, stdin);
 
+    // Only searches by ID will be considered
     if(strcmp(index, "id") == 0){
         int value = 0;
         scanf("%d", &value);
 
+        // Recursive search
         int pos = search_b(index_file, type_file, value, get_root_node(b));
 
+        // If the ID is found, the record will be fetched and displayed
         if(pos != -1){
             if(type_file == 1) jump_to_record(bin_file, pos, -1);
             else               jump_to_record(bin_file, -1, pos);
 
             RECORD* r = create_record();
             HEADER* h = create_header();
+            
             get_record(bin_file, r, h, type_file);
-
             print_record(r);
+
             free_rec(r);
             free_header(h);
         }else
@@ -1284,6 +1291,9 @@ int search_with_b_tree(FILE* bin_file, FILE* index_file, int type_file){
     free(b);
 }
 
+// Insert a key in Tree B, index file ($index_f) and data file
+//based registry replacement mechanisms for files with static regs (stack)
+//and variable length records (linked list)
 void insert_record_b(
     FILE* bin_file, FILE* index_f,
     HEADER* h, RECORD* r,
@@ -1337,11 +1347,12 @@ void insert_record_b(
     }
     
     int promo_child = -1;
-    INDEX* key = initialize_index();
-    key->id =  r->id;
-
+    // Pointer that will contain the keys that will be promoted during recursion
     INDEX* promo_key = initialize_index();
 
+    // Key to be added
+    INDEX* key = initialize_index();
+    key->id =  r->id;
     if(type_file == 1)  key->rrn = rrn;
     else                key->BOS = BOS;
 

@@ -9,9 +9,19 @@
 #define NoPROMOTED 1 
 #define PROMOTED 2
 
+// Cabecalho do arquivo para arvore B
 typedef struct b_tree B_TREE;
+// Nó da arvore B
 typedef struct node_t NODE_T;
 
+/**
+ * @brief Cria um arquivo de indice de arvore B
+ * 
+ * @param bin_file    Arquivo de dados de onde serao retirados os registros 
+ * @param index_file  Arquivo de indice onde sera escrito a arvore
+ * @param type_file   Tipo de registro presente no arquivo de dados
+ * @return int        -2 arquivos corrompidos/1 execucao correta 
+ */
 int create_b_tree_index(FILE* bin_file, FILE* index_file, int type_file);
 
 /**
@@ -21,7 +31,7 @@ int create_b_tree_index(FILE* bin_file, FILE* index_file, int type_file);
  * @param type_file     Tipo do registro contido no arquivo de dados
  * @param id            ID que sera buscado
  * @param b             Struct da arvore B
- * @return int          -1 caso nao encontre / -2 caso encontre
+ * @return int          -1 caso nao encontre / RRN/BOS caso encontre
  */
 int search_b(FILE* index_file, int type_file, int id, int rrn);
 
@@ -40,33 +50,15 @@ int search_b(FILE* index_file, int type_file, int id, int rrn);
  */
 int insert_b(FILE* ind, B_TREE* b, INDEX* key, int curr_rrn, 
             int* promo_child, INDEX* promo_key, int type_file);
-      
-void split(FILE* index_file, INDEX* key, INDEX* promo_key, int p_b_rrn, 
-            int* promo_child, NODE_T* node_t, NODE_T* new_node_t,  int type_file); 
 
-int find_key_in_node(NODE_T* node_t, int key, int type_file, int* found);
+// Le o cabeçalho de arquivo de indice arvore B
+B_TREE* read_header_b_tree(FILE* index_file, int type_file);
 
-NODE_T read_node(FILE* index_file, int type_file);
-
-void insert_in_node(INDEX* key, int r_child, NODE_T* node, int type_file);
-
-int get_next_rrn(FILE* index_file);
-
-void jump_to_root(FILE* index_file, B_TREE* b, int type_file);
-
-void create_root(FILE* index_file, B_TREE* b, INDEX* key, int left, int right, int type_file);
-
-void jump_to_node_b(FILE* index_file, int rrn, int type_file);
-
-void write_node(FILE* index_file, int rrn, int type_file, NODE_T node);
-
-void print_node(NODE_T* node, int type_file);
-
+// Atualiza no arquivo, o cabelho do arquivo, baseado nos dados em $(b)
 void update_header_b(FILE* index_file, B_TREE* b);
 
-void show_nodes(FILE* index_file, int type_file);
-
-B_TREE* read_header_b_tree(FILE* index_file, int type_file);
+// Cria uma nova raiz para a avore B, com a chave $(key) e filhos $(left) e $(right)
+void create_root(FILE* index_file, B_TREE* b, INDEX* key, int left, int right, int type_file);
 
 int get_root_node(B_TREE* b_tree);
 
