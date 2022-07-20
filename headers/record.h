@@ -71,7 +71,7 @@ void jump_to_record(FILE* file, int rrn, long int BOS);
              1 success                                                            */
 int insert_into(FILE* bin_file, char* name_index, int n, int type_file, int index_mode);
 
-/*  Atualiza 'n' registros em 'bin_file' and update index file 'name_index'
+/*  Update 'n' records in 'bin_file' and update index file 'name_index'
     RETURN:
             -2 if the files are corrupted or do not exist
              1 success                                                            */

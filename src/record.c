@@ -118,7 +118,7 @@ int create_table(FILE* csv_file, FILE* bin_file, int type_file){
         fwrite(&BOS, 1, sizeof(long int), bin_file);
     }
 
-    //changes status to 1 (consistent data file)
+    // Changes status to 1 (consistent data file)
     update_status(bin_file);
     free_rec(r);
     free_header(header);
@@ -129,7 +129,7 @@ int select_from(FILE* bin_file, int type_file){
     if(bin_file == NULL)    
         return -2;
 
-    //checks if the file is inconsistent
+    // Checks if the file is inconsistent
     int status = check_status(bin_file);
     if(status == 0 || status == -1)
         return -2;
@@ -137,13 +137,13 @@ int select_from(FILE* bin_file, int type_file){
     RECORD* r = create_record();
     HEADER* header = create_header();
 
-    //jump the header
+    // Jump the header
     jump_header(bin_file, type_file);
 
     int record_size = 0;
     int i = 0;
     while((record_size = get_record(bin_file, r, header, type_file)) != -2)
-        if(record_size != -1) //checks that the registry is not removed
+        if(record_size != -1) // Checks that the registry is not removed
             print_record(r);
     
     free(header);
@@ -155,14 +155,14 @@ int select_from_where(FILE* bin_file, char** fields, int n, int type_file){
     if(bin_file == NULL || fields == NULL)
         return -2;
 
-    //checks if the file is inconsistent
+    // Checks if the file is inconsistent
     int status = check_status(bin_file);
     if(status == 0 || status == -1)
         return -2;
         
     jump_header(bin_file, type_file);
     
-    //record that will be compared
+    // Record that will be compared
     RECORD* r = NULL;
     HEADER* header = create_header();
     int rec_size = 0;
@@ -182,14 +182,14 @@ int search_rrn(char* type_file, FILE* bin_file, int rrn, RECORD* r){
     if(bin_file == NULL || strcmp(type_file, "tipo1") != 0)
         return -2;
     
-    //check if it is an existing RRN
+    // Check if it is an existing RRN
     fseek(bin_file, 174, SEEK_SET);
     int x = 0;
     fread(&x, 1, sizeof(int), bin_file);
     if(rrn >= x)
         return -1;
     
-    //sends the pointer to the register
+    // Sends the pointer to the register
     fseek(bin_file, (rrn*STATIC_REC_SIZE)+STATIC_REC_HEADER, SEEK_SET);
     HEADER* header = create_header();
 
@@ -209,20 +209,20 @@ RECORD* parameterized_search(
     int old_next_rrn, long int old_next_bos
 ){
     RECORD* r = create_record();
-    //checks whether the record was removed and contains the size of the record read
+    // Checks whether the record was removed and contains the size of the record read
     int record_size = 0;
-    //checks if the record has the same fields/values as the searched record
+    // Checks if the record has the same fields/values as the searched record
     int error = 1;
 
-    //fields index
+    // Fields index
     int i = 0;
 
-    //rrn counter
+    // Rrn counter
     int j = 0;
     
     while((record_size = get_record(bin_file, r, header, type_file)) != -2){
         j++;
-        if(record_size == -1) // excluded register
+        if(record_size == -1) // Excluded register
             error = -1;
         
         if((old_next_bos != -1 && ftell(bin_file) >= old_next_bos) || 
@@ -231,7 +231,7 @@ RECORD* parameterized_search(
         
         int test_int = 0;
 
-        //holds as long as the array fields are equal to r
+        // Holds as long as the array fields are equal to r
         while (error > 0 && i < n*2){
             if(strcmp(fields[i], "id") == 0){
                 test_int = atoi(fields[i + 1]);
@@ -268,17 +268,17 @@ RECORD* parameterized_search(
             }else
                 error = -1;
 
-            //next field on 'fields' 
+            // Next field on 'fields' 
             i += 2;
         }
 
-        //checks if it is really the record you are looking for
+        // Checks if it is really the record you are looking for
         if(error > 0){
             *rec_size = record_size;
             return r;
         }
         
-        //reset error for a next search
+        // Reset error for a next search
         error = 1;
         i = 0;
     }
@@ -295,7 +295,7 @@ int read_rec_input(FILE* file, RECORD* r){
     
     int rec_size = 22;
     
-    //there is always an id and is != 0
+    // There is always an id and is != 0
     if(read_int_field(file, &(r->id)) == -1)
         return -1;
     
@@ -329,7 +329,7 @@ int read_rec_input(FILE* file, RECORD* r){
         rec_size += r->model_size + 5;
     }
 
-    //removes '\n'
+    // Removes '\n'
     c = fgetc(file);
     if(c != '\n')
         ungetc(c, file);
@@ -345,7 +345,7 @@ int read_insert_data(FILE* file, RECORD* r){
     
     int rec_size = 22;
     
-    //there is always an id and is != 0
+    // There is always an id and is != 0
     if(read_int_field(file, &(r->id)) == -1)
         return -1;
     
@@ -382,7 +382,7 @@ int read_insert_data(FILE* file, RECORD* r){
         rec_size += r->model_size + 5;
     }
 
-    //removes '\n'
+    // Removes '\n'
     c = fgetc(file);
     if(c != '\n')
         ungetc(c, file);
@@ -403,10 +403,10 @@ int write_item(
     int i = -1;
     long int li = -1;
 
-    //----static data
+    //---- Static data
     fwrite(&r->removed, 1, sizeof(char), bin_file);
     
-    //next
+    // Next
     if(type_file == 1)
         fwrite(&i, 1, sizeof(int), bin_file);    
     else if(type_file == 2){
@@ -419,8 +419,8 @@ int write_item(
     fwrite(&r->amount, 1, sizeof(int), bin_file);
     fwrite(r->abbreviation, 2, sizeof(char), bin_file);
 
-    //----variable data
-    //the if's check if the field is not null
+    //---- Variable data
+    // The if's check if the field is not null
     if(r->city_size > 0){
         fwrite(&r->city_size, 1, sizeof(int), bin_file);
         fwrite(&header->codC5, 1, sizeof(char), bin_file);
@@ -441,14 +441,14 @@ int write_item(
     }
 
     if(type_file == 1){
-        //ensures that each record is 97 bytes long
+        // Ensures that each record is 97 bytes long
         bytes_written += 19;
         for(int i = bytes_written; i < STATIC_REC_SIZE; i++)
             fwrite("$", 1, sizeof(char), bin_file);
     }
     else{
         bytes_written += 22;
-        //Update the space left with garbage
+        // Update the space left with garbage
         if(update == 1)
             for (int i = bytes_written; i < record_size; i++)
                 fwrite("$", 1, sizeof(char), bin_file);   
@@ -466,17 +466,17 @@ int add_str_field(FILE* bin_file, RECORD* r, HEADER* header){
     fread(&cod, 1, sizeof(char), bin_file);
 
     if(cod == header->codC5){
-        //city (0)
+        // City (0)
         r->city_size = string_size;
         fread(r->city, r->city_size, sizeof(char), bin_file);
         r->city[string_size] = '\0';
     }else if(cod == header->codC6){
-        //brand (1)
+        // Brand (1)
         r->brand_size = string_size;
         fread(r->brand, r->brand_size, sizeof(char), bin_file);
         r->brand[string_size] = '\0';
     }else if(cod == header->codC7){
-        //model (2)
+        // Model (2)
         r->model_size = string_size;
         fread(r->model, r->model_size, sizeof(char), bin_file);
         r->model[string_size] = '\0';
@@ -489,7 +489,7 @@ int read_fields_t1(FILE* bin_file, HEADER* header, RECORD* r, int* record_size){
     char c = 0;
 
     for (int i = 0; i < 3; i++){
-        //checks if there are more fields
+        // Checks if there are more fields
         fread(&c, 1, sizeof(char), bin_file);
         if(c == '$') return (++(*record_size)); //+1 from fread(&c)  
         else         ungetc(c, bin_file);
@@ -520,11 +520,11 @@ int read_fields_t2(FILE* bin_file, HEADER* header, RECORD* r, int* bytes_scanned
 int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file){
     int bytes_scanned = 0;
 
-    //fixed length fields
+    // Fixed length fields
     if(fread(&r->removed, 1, sizeof(char), bin_file) == 0)
         return -2; 
 
-     //checks if the record was not logically removed
+     // Checks if the record was not logically removed
     if(r->removed == '1'){
         next_register(bin_file, type_file);
         return -1;
@@ -532,7 +532,7 @@ int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file){
 
     int record_size = 0;
     
-     //next
+     // Next
     if(type_file == 1){
         bytes_scanned = 19;
         int next = 0;
@@ -555,12 +555,12 @@ int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file){
     
     char c;
     
-    //variable size fields
+    // Variable size fields
     r->city_size = 0;
     r->brand_size  = 0;
     r->model_size = 0;
     
-    //removes garbage from registry and from buffer
+    // Removes garbage from registry and from buffer
     if(type_file == 1){
         read_fields_t1(bin_file, header, r, &bytes_scanned);
         fseek(bin_file, STATIC_REC_SIZE - bytes_scanned, SEEK_CUR);
@@ -578,7 +578,7 @@ int print_record(RECORD* r){
     if(r == NULL)
         return -1;
 
-    //the if's check if the field is not null
+    // The if's check if the field is not null
     if(r->brand_size > 0)
         printf("MARCA DO VEICULO: %s\n", r->brand);  
     else  
@@ -652,15 +652,15 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
     update_status(bin_file);
     update_status(index_file);
 
-    //Aux Variables
+    // Aux Variables
     RECORD* r = NULL;
     HEADER* h = create_header();
 
-    //Linked list and Stack that will help the exclusion structures
+    // Linked list and Stack that will help the exclusion structures
     STACK* stack = NULL;
     LIST*  list  = NULL;
 
-    //Allocates space for only one of the structures
+    // Allocates space for only one of the structures
     if(type_file == 1){
         stack = create_stack(500);
         read_stack_top(bin_file, stack);
@@ -670,57 +670,56 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
         read_list(bin_file, list);
     }
 
-    //number of records removed
+    // Number of records removed
     int removed_amount = 0;
     
-    //Vector that will store the id/(rrn/BOS) of the index file (index_file)
+    // Vector that will store the id/(rrn/BOS) of the index file (index_file)
     int index_size = 0;
     INDEX* index = read_index_file(index_file, &index_size, type_file);
      
-    //number of fields to be searched
+    // Number of fields to be searched
     int amt_fields = 0;
     //variable that stores the position where there is a search for id in 'fileds
     int the_isre_id = -1;
 
-    //search for removal n times
+    // Search for removal n times
     for(int i = 0; i < n; i++){
         scanf("%d", &amt_fields);
 
         char** fields = read_search_fields(amt_fields, &the_isre_id);  
         
-        int pos = 0; //position of the fetched record in the index array
+        int pos = 0; // Position of the fetched record in the index array
         int rrn = 0;      
         long int BOS = 0;
         int rec_size = -1;
 
-        //if there is a search by ID the record is quickly retrieved, if it exists
+        // If there is a search by ID the record is quickly retrieved, if it exists
         if(the_isre_id != -1){
-            //fetches the record in the index vector and assigns its location
-            //the rrn or BOS
+            //Fetches the record in the index vector and assigns its location
+            // the rrn or BOS
             pos = recover_rrn(index, atoi(fields[the_isre_id+1]), 
                                    index_size, type_file, &rrn, &BOS);
             
-            //if it exists, the other search fields are compared with the record
+            // If it exists, the other search fields are compared with the record
             if(pos != -1){
                 jump_to_record(bin_file, rrn, BOS);
                 r = parameterized_search(bin_file, h, fields, amt_fields, 
                                         type_file, &rec_size, -1, -1);
                 
-                //if the record contains the searched fields, it will be deleted
+                // If the record contains the searched fields, it will be deleted
                 if(r != NULL){
-                    //print_record(r);
                     delete_record(bin_file, type_file, index, &index_size,
                                  stack, list, pos, rrn, BOS, rec_size);
 		            removed_amount++;
 		            free_rec(r); 
                 }              
             }                 
-        //sequential search
+        // Sequential search
         }else{
             char c = 0;
             jump_header(bin_file, type_file);
 
-            //as long as there is a record, a parametrized search will be performed
+            // As long as there is a record, a parametrized search will be performed
             //for all records
             while(fread(&c, 1, sizeof(char), bin_file) != 0){
                 ungetc(c, bin_file);
@@ -745,14 +744,14 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
         the_isre_id = -1;
     }
 
-    //transfers the structure of the stack/linked list to the file
+    // Transfers the structure of the stack/linked list to the file
     if(removed_amount != 0){
         if(type_file == 1)
             write_stack(bin_file, stack); 
         else
             write_list(bin_file, list);
 
-        //Reopen the index file to be rewritten and delete the previous contents
+        // Reopen the index file to be rewritten and delete the previous contents
         fclose(index_file);
         index_file = fopen(name_index, "w+b");
         write_index(index_file, index, index_size, type_file);
@@ -760,7 +759,7 @@ int delete_where(FILE* bin_file, char* name_index, int n, int type_file){
         update_status(index_file); 
         fclose(index_file);
     
-        //updates the number of removed records
+        // Updates the number of removed records
         att_numRecRem(bin_file, 1, type_file, removed_amount);  
     }
      
@@ -782,7 +781,7 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file, int inde
     if(!check_status(bin_file) && !check_status(index_file))
         return -2;
     
-    //Updates file staus as inconsistent to make changes
+    // Updates file staus as inconsistent to make changes
     update_status(bin_file);
     update_status(index_file);
 
@@ -797,11 +796,11 @@ int insert_into(FILE* bin_file, char* name_index, int n, int type_file, int inde
         b = read_header_b_tree(index_file, type_file);
     }
 
-    //Linked list and Stack that will help the exclusion structures
+    // Linked list and Stack that will help the exclusion structures
     STACK* stack = NULL;
     LIST*  list  = NULL;
 
-    //Allocates space for only one of the structures
+    // Allocates space for only one of the structures
     if(type_file == 1){
         stack = create_stack(500);
         read_stack(bin_file, stack); 
@@ -867,18 +866,18 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
     if(!check_status(bin_file) && !check_status(index_file))
         return -2;
     
-    //Updates file staus as inconsistent to make changes
+    // Updates file staus as inconsistent to make changes
     update_status(bin_file);
     update_status(index_file);
 
     int index_size = 0;
     INDEX* index = read_index_file(index_file, &index_size, type_file);
 
-    //Linked list and Stack that will help the exclusion structures
+    // Linked list and Stack that will help the exclusion structures
     STACK* stack = NULL;
     LIST*  list  = NULL;
 
-    //Allocates space for only one of the structures
+    // Allocates space for only one of the structures
     if(type_file == 1){
         stack = create_stack(500);
         read_stack(bin_file, stack);
@@ -909,20 +908,20 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
     int there_is_id_u = -1;
     int there_is_id_s = -1;
     
-    //search for removal n times
+    // Search for removal n times
     for(int i = 0; i < n; i++){
         long int old_next_BOS = next_BOS;
         int old_next_rrn = next_RRN;
 
-        //Search fields
+        // Search fields
         scanf("%d", &amt_s_fields);
         char** s_fields = read_search_fields(amt_s_fields, &there_is_id_s);  
     
-        //Update fields
+        // Update fields
         scanf("%d", &amt_u_fields);
         char** u_fields = read_search_fields(amt_u_fields, &there_is_id_u);  
         
-        int pos = 0; //position of the fetched record in the index array
+        int pos = 0; // Position of the fetched record in the index array
         int rrn = 0;      
         long int BOS = 0;
         
@@ -939,7 +938,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
             pos = recover_rrn(index, atoi(s_fields[there_is_id_s+1]), 
                              index_size, type_file, &rrn, &BOS);
 
-            //Compares the fields, other than the ID, of the search
+            // Compares the fields, other than the ID, of the search
             if(pos != -1){
                 jump_to_record(bin_file, rrn, BOS);
                 r = parameterized_search(bin_file, h, s_fields, amt_s_fields, type_file,
@@ -949,22 +948,22 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
             if(r != NULL){
                 rec_size = old_rec_size;
                 
-                //updates the fields
+                // Updates the fields
                 update_record(bin_file, r, u_fields, amt_u_fields, &rec_size);
                 
                 if(type_file == 1){
                     jump_to_record(bin_file, rrn, BOS);
                     write_item(bin_file, r, h, type_file, rec_size, 1);
                 }else{
-                    //Checks whether the record can be overwritten
+                    // Checks whether the record can be overwritten
                     if(rec_size > old_rec_size){
-                        //Deletes the record and adds it in another position
+                        // Deletes the record and adds it in another position
                         delete_record(bin_file, type_file, index, &index_size,
                                      stack, list, pos, rrn, BOS, old_rec_size);
 
                         h->numRegRem++;
 
-                        //Searches for the ideal place to insert the updated record
+                        // Searches for the ideal place to insert the updated record
                         insert_record(bin_file, h, stack, list, type_file, &next_RRN,
                             &next_BOS, rec_size, old_rec_size, r, index, &index_size);
                     } else{
@@ -973,7 +972,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                     }
                 }
 
-                //Checks if the ID should be changed and populates the index vector
+                // Checks if the ID should be changed and populates the index vector
                 if(there_is_id_u != -1)
                     update_id_index(index, pos, type_file, 3, index_size,
                                     rrn, BOS, atoi(u_fields[there_is_id_u+1]));
@@ -981,21 +980,21 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                 free_rec(r);
                 sort_id_index(index, index_size);
             }
-        //Sequential search
+        // Sequential search
         }else{
             jump_header(bin_file, type_file);
             long int curr_position = 0;
             
-            //as long as there is a record, a parametrized search will be performed
+            // As long as there is a record, a parametrized search will be performed
             //for all records
             while((r = parameterized_search(bin_file, h, s_fields, amt_s_fields, 
                        type_file, &old_rec_size, old_next_rrn, old_next_BOS)) != NULL){
                 
-                //position to continue the search after updated from the record
+                // Position to continue the search after updated from the record
                 curr_position = ftell(bin_file);
                 rec_size = old_rec_size;
                 
-                //updates the fields
+                // Updates the fields
                 update_record(bin_file, r, u_fields, amt_u_fields, &rec_size);
 
                 pos = recover_rrn(index, r->id, index_size, type_file, &rrn, &BOS);
@@ -1005,9 +1004,9 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                         jump_to_record(bin_file, rrn, BOS);
                         write_item(bin_file, r, h, type_file, rec_size, 1);
                     }else{
-                        //Checks whether the record can be overwritten
+                        // Checks whether the record can be overwritten
                         if(rec_size > old_rec_size){
-                            //Deletes the record and adds it in another position
+                            // Deletes the record and adds it in another position
                             delete_record(bin_file, type_file, index, &index_size,
                                         stack, list, pos, rrn, BOS, old_rec_size);
 
@@ -1022,7 +1021,7 @@ int update_where(FILE* bin_file, char* name_index, int n, int type_file){
                         }
                     }
                 }
-                //Checks if the ID should be changed and populates the index vector
+                // Checks if the ID should be changed and populates the index vector
                 if(there_is_id_u != -1)
                     update_id_index(index, pos, type_file, 3, index_size,
                                     rrn, BOS, atoi(u_fields[there_is_id_u+1]));
@@ -1077,7 +1076,7 @@ void delete_record(
         add_sorted_to_list(list, BOS, rec_size);
     }
     
-    //updates the index vector
+    // Updates the index vector
     (*index_size)--;
     update_id_index(index, pos, type_file, 1, *index_size, -1, -1, -1);
     sort_id_index(index, *index_size);
@@ -1209,14 +1208,14 @@ void update_record(FILE* bin_file, RECORD* r, char** u_fields, int amt_fields, i
 }
 
 int add_valid_field(char** fields, int i, char* string, int *rec_size, int str_size, int type){  
-    //Type 1 => int vars 
+    // Type 1 => int vars 
     if(type == 1){
         if(strcmp(fields[i+1],"NULO") != 0)
             return atoi(fields[i+1]);
         else
             return -1;
     
-    // => chars vars
+    // => Chars vars
     }else{
         int size = strlen(fields[i+1]);
         if(strcmp(fields[i+1],"NULO") != 0){
@@ -1225,7 +1224,7 @@ int add_valid_field(char** fields, int i, char* string, int *rec_size, int str_s
             
             if(str_size > 0)
                 *rec_size += - str_size + size;
-            else //CODstr + str_size + string
+            else // CODstr + str_size + string
                 *rec_size += 1 + 4 + size; 
             
             return size;

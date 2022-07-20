@@ -21,13 +21,13 @@ void att_numRecRem(FILE* bin_file, int mode, int type_file, int quantity){
         fread(&numRecRem, 1, sizeof(int), bin_file);
     }
 
-    //Removing a record
+    // Removing a record
     if(mode == 1)
         if(numRecRem <= 0)
             numRecRem = quantity;
         else
             numRecRem += quantity;
-    else //Adding a record
+    else // Adding a record
         numRecRem -= quantity;
         
     fseek(bin_file, -sizeof(int), SEEK_CUR);
@@ -85,11 +85,11 @@ void read_stack(FILE* bin_file, STACK* stack){
     int rrn = -1;
     int next_rrn = -1;
 
-    //Reading the top of the stack
+    // Reading the top of the stack
     fseek(bin_file, 1, SEEK_SET);
     fread(&rrn, 1, sizeof(int), bin_file);
     
-    //initializing the top
+    // Initializing the top
     if(rrn != -1)
         stack->begin = 0;
     
@@ -98,17 +98,16 @@ void read_stack(FILE* bin_file, STACK* stack){
     node.rrn = rrn;
     
     while(node.rrn != -1){
-        //printf("node -> %d + ", node.rrn);
         jump_to_record(bin_file, node.rrn, 0);
         fseek(bin_file, 1, SEEK_CUR);
         fread(&next_rrn, 1, sizeof(int), bin_file);
 
-        //adding the node on the stack
+        // Adding the node on the stack
         node.next = stack->rec_amount+1;
-        //printf("next %d\n", node.next);
+        // Printf("next %d\n", node.next);
         stack->r_stack[stack->rec_amount++] = node;
 
-        //seeking the next node
+        // Seeking the next node
         node.rrn = next_rrn;
     }
 
@@ -120,12 +119,11 @@ void add_stack(STACK* stack, int rrn){
     if(stack == NULL || rrn == -1)
         return;
 
-    //printf("ADICIONADO NA STACK %d [%d]\n", rrn, stack->rec_amount);
     NODE_stack node_stack;
     node_stack.rrn  = rrn;
     node_stack.next = stack->begin;
 
-    //Adding the new rrn and updating the top
+    // Adding the new rrn and updating the top
     stack->begin = stack->rec_amount;
     stack->r_stack[stack->rec_amount++] = node_stack;
 }
@@ -136,14 +134,14 @@ int write_stack(FILE* bin_file, STACK* stack){
 
     NODE_stack node = stack->r_stack[stack->begin];
     
-    //updates the top of the stack
+    // Updates the top of the stack
     fseek(bin_file, 1, SEEK_SET);
     fwrite(&node.rrn, 1, sizeof(int), bin_file);
 
     NODE_stack old_node;
     old_node.next = 0;
         
-    //Adds the structure of the deleted records in the file to the stack
+    // Adds the structure of the deleted records in the file to the stack
     while(stack->rec_amount != 1){
         old_node = node;
 
@@ -232,8 +230,8 @@ void add_list(LIST* list, long int BOS, int rec_size, long int next_BOS){
     list->r_list[list->rec_amount].BOS = BOS;
     list->r_list[list->rec_amount].rec_size = rec_size;
     
-    // Since they are already in the file in order, if there is a proxBOS,
-    // it will be at the next position of the vector
+    // Since they are already in the file in order, if there is a nextBOS,
+    //it will be at the next position of the vector
     if(next_BOS != -1)
         list->r_list[list->rec_amount].next = list->rec_amount + 1;
     else
@@ -262,7 +260,7 @@ void read_list(FILE* bin_file, LIST* list){
             fread(&rec_size, 1, sizeof(int), bin_file);
             fread(&next_BOS, 1, sizeof(long int), bin_file);
 
-            //add to the list
+            // Add to the list
             add_list(list, BOS, rec_size, next_BOS);
 
             BOS = next_BOS;
@@ -277,31 +275,31 @@ void add_sorted_to_list(LIST* list, long int BOS, int rec_size){
     node_list.rec_size = rec_size;
     node_list.BOS      = BOS;
     node_list.next     = -1;
-    // loop control
-    int i = 0;
+    
+    int i = 0; // Loop control
 
     int actual_node = list->begin;
     int last_node   = -1;
     
     // Loop to search for the optimal position to add the new record 
-    // in the list sorted from rec_size
+    //in the list sorted from rec_size
     while(actual_node != -1 && list->r_list[actual_node].rec_size > rec_size){
         last_node = actual_node;
         
-        //next node in the list
+        // Next node in the list
         actual_node = list->r_list[actual_node].next;
         i++;
     }
     
     
-    if(actual_node == list->begin){    //insertion at the beginning
+    if(actual_node == list->begin){    // Insertion at the beginning
         if(list->rec_amount != 0)
             node_list.next = list->begin;
 
         list->begin = list->rec_amount;
-    }else if(actual_node == -1){       //insertion at the end
+    }else if(actual_node == -1){       // Insertion at the end
         list->r_list[last_node].next = list->rec_amount;
-    }else{                             //insertion at the mid
+    }else{                             // Insertion at the mid
         node_list.next = actual_node;
         list->r_list[last_node].next = list->rec_amount;
     }
@@ -330,22 +328,22 @@ int write_list(FILE* bin_file, LIST* list){
         return -1;
     
     fseek(bin_file, 1, SEEK_SET);
-    // loop control
+    // Loop control
     NODE_list node = list->r_list[list->begin];
 
-    //Updating the top
+    // Updating the top
     fwrite(&node.BOS, 1, sizeof(long int), bin_file);
 
-    //Adds all records removed from the list to the data file
+    // Adds all records removed from the list to the data file
     while(node.next != -1){
         fseek(bin_file, node.BOS, SEEK_SET);
 
-        //marks as removed
+        // Marks as removed
         fwrite("1", 1, sizeof(char), bin_file);
         if(node.next != -1)
             node = list->r_list[node.next];
             
-        //add nextBOS
+        // Add nextBOS
         fseek(bin_file, sizeof(int), SEEK_CUR);  
         fwrite(&node.BOS, 1, sizeof(long int), bin_file);
     }

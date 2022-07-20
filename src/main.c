@@ -7,11 +7,12 @@
  |                      SCC0215 - Archives Organization                          |
  |                                                                               |
  |Authors: Gustavo Sampaio Lima (12623992) and Thierry de Souza Araujo (12681094)|
+ |Percentage: Gustavo (100%) //  Thierry(100%)                                   |
  *********************************************************************************
-  > "Segundo Trabalho Pratico"
-  > Objective: To implement a C program through which the user can
-    insert, remove and update data from binary files, as well as create indexes for
-    index these files
+  > "Terceiro Trabalho Pratico"
+  > Objective: Implement a C program through which the user can insert, remove and
+   update data from binary files, as well as create indexes for index these files.
+   The indexes are characterized by being of the B-tree type.
  ********************************************************************************/
 
 /* 
@@ -33,7 +34,7 @@
 int main(){
 
     int option;
-    int res = 1;           // function return
+    int res = 1;           // Function return
     char name_csv[20];
     char type_file[6];
     char name_bin[200];
@@ -92,11 +93,11 @@ int main(){
             read_word(name_bin, stdin);
             bin_file = fopen(name_bin, "rb");
 
-            //number of searched fields
+            // Number of searched fields
             int n, id_trash;
             scanf("%d", &n);
 
-            //array that will contain the fields and values to be searched
+            // Array that will contain the fields and values to be searched
             char** array = read_search_fields(n, &id_trash);
             
             if(strcmp(type_file, "tipo1") == 0){
@@ -115,7 +116,7 @@ int main(){
             free_array_fields(array, n);
             break;
 
-        case 4:     //search by RRN 
+        case 4:     // Search by RRN 
             read_word(name_bin, stdin);
             int rrn; scanf("%d", &rrn);
 
@@ -185,7 +186,7 @@ int main(){
             }
             
             break;
-        case 7:     // INSERT .. INTO
+        case 7:     //INSERT ... INTO
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
 
@@ -211,7 +212,7 @@ int main(){
                 binarioNaTela(name_index_bin);
             }
             break;
-        case 8:;    //UPDATE .. WHERE
+        case 8:;    //UPDATE ... WHERE
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
 
@@ -236,7 +237,7 @@ int main(){
                 binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);
             }
-        case 9:
+        case 9:     //CREATE INDEX (B-TREE)
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
 
@@ -262,7 +263,7 @@ int main(){
             }
 
             break;
-        case 10:
+        case 10:     //SELECT ... WHERE (B-TREE)
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
 
@@ -281,7 +282,7 @@ int main(){
             else if(res == INEXISTENT_DATA)
                 printf("Registro inexistente.");
             break;
-        case 11:
+        case 11:     //INSERT ... INTO (B-TREE)
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
 

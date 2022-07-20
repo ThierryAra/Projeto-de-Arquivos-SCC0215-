@@ -44,7 +44,7 @@ int write_header(HEADER* h, FILE* bin_file, int type_file){
     fwrite(&h->status, 1, sizeof(char), bin_file);   //status
     
     if(type_file == 1)
-        fwrite(&h->top_rrn, 1, sizeof(int), bin_file);       //topo
+        fwrite(&h->top_rrn, 1, sizeof(int), bin_file);       //top
     else if(type_file == 2)
         fwrite(&h->top_BOS, 1, sizeof(long int), bin_file);                   
     
@@ -89,7 +89,6 @@ char update_status(FILE* bin_file){
         status = '0';
     }
 
-    //printf(" %c\n", status);
     return status;
 }
 

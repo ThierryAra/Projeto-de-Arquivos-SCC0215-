@@ -17,7 +17,7 @@ int remove_header_csv(FILE* file_csv){
     mode: if 1 -> read number                            */
 int check_field(FILE* file, int mode){
     char c = fgetc(file);
-    //checks if the field is null
+    // Checks if the field is null
     if(c == ',' || c == '\n' || c == '\r' || c == EOF) 
         return -1;
     else{
@@ -41,7 +41,7 @@ int read_int_field(FILE* file, int* value){
     
     fscanf(file, "%d", value);
     
-    //remove ',' or ' ' between fields
+    // Remove ',' or ' ' between fields
     char c; fscanf(file, "%c", &c);
     return 1;
 }
@@ -87,7 +87,7 @@ int read_word(char* string, FILE* file){
     if(c == 0)
         return 1;
 
-    //removes unnecessary characters before the word
+    // Removes unnecessary characters before the word
     while(c == '\n' || c == '\r' || c == ' ')
         c = fgetc(file);
     
@@ -111,7 +111,7 @@ void scan_quote_strings(char* string){
     if(c == '"')
         is_there = 1;
      
-    //removes unnecessary characters before the word
+    // Removes unnecessary characters before the word
     while(c == '\n' || c == '\r' || c == '"' || c == ' ')
         c = getchar();
     
@@ -142,7 +142,7 @@ char** create_array_fields(int n){
     if(n == 0)
         return NULL;
 
-    //vector = [(field1, value1), ..., (field_n, value_n)]
+    // vector = [(field1, value1), ..., (field_n, value_n)]
     char** array = malloc(n*2 * sizeof(char*));
 
     for(int i = 0; i < n*2; i++)
@@ -154,7 +154,7 @@ char** create_array_fields(int n){
 char** read_search_fields(int n, int* is_there_id){
     char** array = create_array_fields(n);
             
-    //{(field_i, value_i), ...}
+    // {(field_i, value_i), ...}
     for (int i = 0; i < n*2; i++){
         read_word(array[i], stdin);
         if(strcmp(array[i], "id") == 0)

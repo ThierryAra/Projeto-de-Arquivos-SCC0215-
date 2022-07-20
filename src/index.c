@@ -21,14 +21,14 @@ void free_index(INDEX* index){
 }
 
 void write_index(FILE* index_file, INDEX* index, int index_size, int type_file){
-    //write status (header) of the index file
+    // Write status (header) of the index file
     char c = '0';
     fwrite(&c, 1, sizeof(char), index_file);
     
-    //control
+    // Control
     int i = 0;
     
-    //Scrolls through all positions of the index vector
+    // Scrolls through all positions of the index vector
     while(i < index_size){
         fwrite(&index[i].id, 1, sizeof(int), index_file);
 
@@ -67,20 +67,20 @@ INDEX* read_data_file(FILE* bin_file, int* id_index_size, int type_file){
     
     INDEX* id_index = NULL;
     
-    char removed;        //will check if the record is logically removed
-    int next_i;          //field that should be ignored (type 1)
-    long int next_li;    //field that should be ignored (type 2)
+    char removed;        // Will check if the record is logically removed
+    int next_i;          // Field that should be ignored (type 1)
+    long int next_li;    // Field that should be ignored (type 2)
     
-    int id = 0, rrn = 0; //values that will be saved in the index array
-    int i = 0;           //vector index
+    int id = 0, rrn = 0; // Values that will be saved in the index array
+    int i = 0;           // Vector index
     
     if(type_file == 1){     
-        //Searches for the largest RRN to allocate space to the index vector
+        // Searches for the largest RRN to allocate space to the index vector
         fseek(bin_file, 174, SEEK_SET);
         fread(id_index_size, 1, sizeof(int), bin_file);
         fseek(bin_file, 4, SEEK_CUR); // jump nroRegRem
         
-        //Allocating space for the index vector 
+        // Allocating space for the index vector 
         id_index = malloc(sizeof(INDEX)*(*id_index_size));
 
         while(fread(&removed, 1, sizeof(char), bin_file) != 0){
@@ -105,7 +105,7 @@ INDEX* read_data_file(FILE* bin_file, int* id_index_size, int type_file){
         HEADER* h = create_header();
         ignore_header(bin_file, type_file);
 
-        //Allocating space for the vector (initial median size)
+        // Allocating space for the vector (initial median size)
         int size = 1100;
         id_index = malloc(sizeof(INDEX)*(size));
 
@@ -194,7 +194,7 @@ INDEX* read_index_file(FILE* index_file, int* id_index_size, int type_file){
         i++;
 
         if(i >= size){
-            //as the files do not usually have more than 1000 records
+            // As the files do not usually have more than 1000 records
             //the increase occurs gradually
             size += size + size/5;
             id_index = realloc(id_index, sizeof(INDEX)*size);
@@ -240,7 +240,7 @@ void update_id_index(
     int mode, int end, 
     int rrn, long int BOS, int new_id
 ){
-    if(mode == 1){ //excluindo
+    if(mode == 1){ // Excluding
         id_index[position].id = -1;
         
         if(type_file == 1)
@@ -248,12 +248,12 @@ void update_id_index(
         else
             id_index[position].BOS = -1;
 
-        //swap
+        // Swap
         INDEX aux = id_index[position];
         id_index[position] = id_index[end];
         id_index[end] = aux;
-    }else if(mode == 2){ //inserindo 
-        //id_index[position].id = new_id;
+    }else if(mode == 2){ // Inserting 
+        // id_index[position].id = new_id;
     }else if(mode == 3){ //update
         if(new_id != -1)
             id_index[position].id = new_id;
@@ -271,7 +271,7 @@ int recover_rrn(
     int id, int id_index_size, 
     int type_file, int* rrn, long int* BOS
 ){  
-    //SIMPLE BINARY SEARCH
+    // SIMPLE BINARY SEARCH
     int begin = 0;
     int end   = (id_index_size)-1;
     int mid = (begin + end)/2; 
