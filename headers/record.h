@@ -81,7 +81,12 @@ int get_record(FILE* bin_file, RECORD* r, HEADER* header, int type_file);
 
 //----------------------------PART 3------------------------------------------//
 
-/*  Searches for certain ID's in the B-tree index file and, if found, displays it */
+/*  Searches for certain ID's in the B-tree index file and, if found, displays it.
+    Display 'Registro inexistente.' if the record is not found.
+    RETURN:
+            -2 if the files are corrupted or do not exist
+             1 sucess
+*/
 int search_with_b_tree(FILE* bin_file, FILE* index_file, int type_file);
 
 int get_id(RECORD* r);

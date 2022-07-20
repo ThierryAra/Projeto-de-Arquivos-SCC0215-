@@ -186,6 +186,7 @@ int main(){
             }
             
             break;
+
         case 7:     //INSERT ... INTO
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
@@ -212,6 +213,7 @@ int main(){
                 binarioNaTela(name_index_bin);
             }
             break;
+
         case 8:;    //UPDATE ... WHERE
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
@@ -237,6 +239,8 @@ int main(){
                 binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);
             }
+
+            break;
         case 9:     //CREATE INDEX (B-TREE)
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
@@ -263,6 +267,7 @@ int main(){
             }
 
             break;
+
         case 10:     //SELECT ... WHERE (B-TREE)
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
@@ -279,9 +284,9 @@ int main(){
             
             if(res == ERROR)
                 printf("Falha no processamento do arquivo.");
-            else if(res == INEXISTENT_DATA)
-                printf("Registro inexistente.");
+                
             break;
+
         case 11:     //INSERT ... INTO (B-TREE)
             read_word(name_bin, stdin);
             read_word(name_index_bin, stdin);
@@ -307,7 +312,7 @@ int main(){
                 binarioNaTela(name_bin);
                 binarioNaTela(name_index_bin);
             }
-                
+            break;   
     }
 
     if(bin_file != NULL) 

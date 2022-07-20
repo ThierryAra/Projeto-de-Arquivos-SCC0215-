@@ -1253,7 +1253,7 @@ int search_with_b_tree(FILE* bin_file, FILE* index_file, int type_file){
         return -2;
 
     if(!check_status(bin_file) || !check_status(index_file))
-        return -1;
+        return -2;
         
     B_TREE* b = read_header_b_tree(index_file, type_file);
 
@@ -1282,15 +1282,16 @@ int search_with_b_tree(FILE* bin_file, FILE* index_file, int type_file){
 
             free_rec(r);
             free_header(h);
-        }else
-            return -1;
+        }else{
+            printf("Registro inexistente.");
+        }
     }else
         return -2;
 
     free(b);
 }
 
-// Insert a key in Tree B, index file ($index_f) and data file
+// Insert a key in B-tree, index file ($index_f) and data file
 //based registry replacement mechanisms for files with static regs (stack)
 //and variable length records (linked list)
 void insert_record_b(
